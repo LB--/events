@@ -62,8 +62,7 @@ namespace resplunk
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
-			EventProcessor() = default;
-			EventProcessor(ListenerPriority priority)
+			EventProcessor(ListenerPriority priority = ListenerPriority{})
 			{
 				listen(priority);
 			}
@@ -118,8 +117,7 @@ namespace resplunk
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
-			EventReactor() = default;
-			EventReactor(ListenerPriority priority)
+			EventReactor(ListenerPriority priority = ListenerPriority{})
 			{
 				listen(priority);
 			}
@@ -215,6 +213,10 @@ namespace resplunk
 
 			static void process(E &e)
 			{
+				if(!e.shouldProcess())
+				{
+					return;
+				}
 				auto &procs = processors(e.server());
 				for(auto it = procs.begin(); it != procs.end(); ++it)
 				{
@@ -238,6 +240,10 @@ namespace resplunk
 			}
 			static void react(E const &e)
 			{
+				if(!e.shouldReact())
+				{
+					return;
+				}
 				auto &reacts = reactors(e.server());
 				for(auto it = reacts.begin(); it != reacts.end(); ++it)
 				{
@@ -273,39 +279,15 @@ namespace resplunk
 			{
 				return util::TemplateImplRepo::get<Key, Reactors_t>();
 			}
-			static auto processors(server::Server &s)
+			static auto processors(server::Server const &s)
 			-> typename Processors_t::mapped_type &
 			{
 				return processors()[&s];
 			}
-			static auto reactors(server::Server &s)
-			-> typename Reactors_t::mapped_type &
-			{
-				return reactors()[&s];
-			}
-			static auto processors(server::Server const &s)
-			-> typename Processors_t::mapped_type &
-			{
-				auto it = processors().find(&s);
-				if(it != processors().end())
-				{
-					return it->second;
-				}
-				static typename Processors_t::mapped_type empty;
-				empty.clear();
-				return empty;
-			}
 			static auto reactors(server::Server const &s)
 			-> typename Reactors_t::mapped_type &
 			{
-				auto it = reactors().find(&s);
-				if(it != reactors().end())
-				{
-					return it->second;
-				}
-				static typename Reactors_t::mapped_type empty;
-				empty.clear();
-				return empty;
+				return reactors()[&s];
 			}
 		};
 

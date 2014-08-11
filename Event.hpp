@@ -26,6 +26,15 @@ namespace resplunk
 				process();
 				react();
 			}
+
+			virtual bool shouldProcess() const
+			{
+				return true;
+			}
+			virtual bool shouldReact() const
+			{
+				return true;
+			}
 		};
 		inline Event::~Event() = default;
 	}

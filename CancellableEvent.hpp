@@ -16,18 +16,14 @@ namespace resplunk
 			{
 				cancelled = c;
 			}
-			virtual bool isCancelled() final
+			virtual bool isCancelled() const final
 			{
 				return cancelled;
 			}
 
-			virtual void react() const override
+			virtual bool shouldReact() const override
 			{
-				if(!cancelled)
-				{
-					ParentE::react();
-					Registrar::react(*this);
-				}
+				return !cancelled;
 			}
 
 		private:
