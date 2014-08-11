@@ -307,42 +307,30 @@ namespace resplunk
 				EventBaseAsserter() = delete;
 			};
 			template<typename T, typename...>
-			struct Process;
+			struct Caller;
 			template<typename T, typename First, typename... Rest>
-			struct Process<T, First, Rest...> final
+			struct Caller<T, First, Rest...> final
 			{
-				Process() = delete;
-				static void call(T &t)
+				Caller() = delete;
+				static void process(T &t)
 				{
 					t.First::process();
-					Process<T, Rest...>::call(t);
+					Caller<T, Rest...>::process(t);
 				}
-			};
-			template<typename T>
-			struct Process<T> final
-			{
-				Process() = delete;
-				static void call(T &t)
-				{
-				}
-			};
-			template<typename T, typename...>
-			struct React;
-			template<typename T, typename First, typename... Rest>
-			struct React<T, First, Rest...> final
-			{
-				React() = delete;
-				static void call(T const &t)
+				static void react(T const &t)
 				{
 					t.First::react();
-					React<T, Rest...>::call(t);
+					Caller<T, Rest...>::react(t);
 				}
 			};
 			template<typename T>
-			struct React<T> final
+			struct Caller<T> final
 			{
-				React() = delete;
-				static void call(T const &t)
+				Caller() = delete;
+				static void process(T &t)
+				{
+				}
+				static void react(T const &t)
 				{
 				}
 			};
@@ -381,12 +369,12 @@ namespace resplunk
 
 			virtual void process() override
 			{
-				impl::Process<EventImplementor, ParentT...>::call(*this);
+				impl::Caller<EventImplementor, ParentT...>::process(*this);
 				return Registrar::process(dynamic_cast<E &>(*this));
 			}
 			virtual void react() const override
 			{
-				impl::React<EventImplementor, ParentT...>::call(*this);
+				impl::Caller<EventImplementor, ParentT...>::react(*this);
 				return Registrar::react(dynamic_cast<E const &>(*this));
 			}
 		};
