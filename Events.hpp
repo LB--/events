@@ -11,6 +11,7 @@
 #include <memory>
 #include <map>
 #include <exception>
+#include <tuple>
 
 namespace resplunk
 {
@@ -174,8 +175,6 @@ namespace resplunk
 			using Processor = EventProcessor<EventT>;
 			using Reactor = EventReactor<EventT>;
 			EventRegistrar() = delete;
-			EventRegistrar(EventRegistrar const &) = delete;
-			EventRegistrar(EventRegistrar &&) = delete;
 
 			static void listen(Processor const &p, ListenerPriority priority = ListenerPriority{})
 			{
@@ -291,13 +290,70 @@ namespace resplunk
 			}
 		};
 
-		template<typename EventT, typename ParentT>
-		struct EventImplementor
-		: virtual ParentT
+		namespace impl
 		{
-			static_assert(std::is_base_of<Event, ParentT>::value, "ParentT must derive from Event");
+			template<typename...>
+			struct EventBaseAsserter;
+			template<typename First, typename... Rest>
+			struct EventBaseAsserter<First, Rest...> final
+			{
+				static_assert(std::is_base_of<Event, First>::value, "ParentT must derive from Event");
+				using Next = EventBaseAsserter<Rest...>;
+				EventBaseAsserter() = delete;
+			};
+			template<>
+			struct EventBaseAsserter<> final
+			{
+				EventBaseAsserter() = delete;
+			};
+			template<typename T, typename...>
+			struct Process;
+			template<typename T, typename First, typename... Rest>
+			struct Process<T, First, Rest...> final
+			{
+				Process() = delete;
+				static void call(T &t)
+				{
+					t.First::process();
+					Process<T, Rest...>::call(t);
+				}
+			};
+			template<typename T>
+			struct Process<T> final
+			{
+				Process() = delete;
+				static void call(T &t)
+				{
+				}
+			};
+			template<typename T, typename...>
+			struct React;
+			template<typename T, typename First, typename... Rest>
+			struct React<T, First, Rest...> final
+			{
+				React() = delete;
+				static void call(T const &t)
+				{
+					t.First::react();
+					React<T, Rest...>::call(t);
+				}
+			};
+			template<typename T>
+			struct React<T> final
+			{
+				React() = delete;
+				static void call(T const &t)
+				{
+				}
+			};
+		}
+		template<typename EventT, typename... ParentT>
+		struct EventImplementor
+		: virtual ParentT...
+		{
+			using Asserter = impl::EventBaseAsserter<ParentT...>;
 			using E = EventT;
-			using ParentE = ParentT;
+			using ParentE = std::tuple<ParentT...>;
 			using Implementor = EventImplementor;
 			using Processor = EventProcessor<EventT>;
 			using Reactor = EventReactor<EventT>;
@@ -325,17 +381,17 @@ namespace resplunk
 
 			virtual void process() override
 			{
-				ParentE::process();
+				impl::Process<EventImplementor, ParentT...>::call(*this);
 				return Registrar::process(dynamic_cast<E &>(*this));
 			}
 			virtual void react() const override
 			{
-				ParentE::react();
+				impl::React<EventImplementor, ParentT...>::call(*this);
 				return Registrar::react(dynamic_cast<E const &>(*this));
 			}
 		};
-		template<typename EventT, typename ParentT>
-		EventImplementor<EventT, ParentT>::~EventImplementor<EventT, ParentT>() = default;
+		template<typename EventT, typename... ParentT>
+		EventImplementor<EventT, ParentT...>::~EventImplementor<EventT, ParentT...>() = default;
 
 		template<typename EventT>
 		struct EventImplementor<EventT, void>
