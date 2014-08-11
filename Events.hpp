@@ -203,7 +203,7 @@ namespace resplunk
 			}
 			static void ignore(Reactor &r)
 			{
-				auto &reacts = reactors(p.server());
+				auto &reacts = reactors(r.server());
 				for(auto it = reacts.begin(); it != reacts.end(); )
 				{
 					if(std::addressof(p) == std::addressof(it->second.get()))
@@ -235,7 +235,7 @@ namespace resplunk
 			}
 			static void react(E const &e)
 			{
-				auto &reacts = reactors(p.server());
+				auto &reacts = reactors(e.server());
 				for(auto it = reacts.begin(); it != reacts.end(); ++it)
 				{
 					try
