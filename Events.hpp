@@ -220,13 +220,13 @@ namespace resplunk
 				auto &procs = processors(e.server());
 				for(auto it = procs.begin(); it != procs.end(); ++it)
 				{
-#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
+#if !defined(_HAS_EXCEPTIONS) || _HAS_EXCEPTIONS
 					try
 #endif
 					{
 						it->second.get().onEvent(e);
 					}
-#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
+#if !defined(_HAS_EXCEPTIONS) || _HAS_EXCEPTIONS
 					catch(std::exception &e)
 					{
 						//
@@ -247,13 +247,13 @@ namespace resplunk
 				auto &reacts = reactors(e.server());
 				for(auto it = reacts.begin(); it != reacts.end(); ++it)
 				{
-#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
+#if !defined(_HAS_EXCEPTIONS) || _HAS_EXCEPTIONS
 					try
 #endif
 					{
 						it->second.get().onEvent(e);
 					}
-#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
+#if !defined(_HAS_EXCEPTIONS) || _HAS_EXCEPTIONS
 					catch(std::exception &e)
 					{
 						//
