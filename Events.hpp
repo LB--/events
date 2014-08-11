@@ -272,7 +272,7 @@ namespace resplunk
 			}
 			static void sdreactors(Server &s)
 			{
-				if(sdreactors().find(&s) != sdreactors().end())
+				if(sdreactors().find(&s) == sdreactors().end())
 				{
 					sdreactors().emplace
 					(
@@ -280,7 +280,7 @@ namespace resplunk
 						SDReactors_t::mapped_type{new ServerDestructReactor{s}}
 					);
 				}
-				else
+				else if(!sdreactors()[&s])
 				{
 					sdreactors().erase(&s);
 				}
