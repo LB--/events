@@ -12,22 +12,22 @@ namespace resplunk
 		{
 			virtual ~CancellableEvent() = 0;
 
-			virtual void setCancelled(bool c)
+			virtual void cancelled(bool c)
 			{
-				cancelled = c;
+				cancel = c;
 			}
-			virtual bool isCancelled() const final
+			virtual bool cancelled() const final
 			{
-				return cancelled;
+				return cancel;
 			}
 
 			virtual bool shouldReact() const override
 			{
-				return !cancelled;
+				return !cancel;
 			}
 
 		private:
-			bool cancelled = false;
+			bool cancel = false;
 		};
 		inline CancellableEvent::~CancellableEvent() = default;
 	}
