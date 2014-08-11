@@ -12,6 +12,15 @@ namespace resplunk
 		{
 			virtual ~Event() = 0;
 
+			virtual void process() override
+			{
+				return Registrar::process(*this);
+			}
+			virtual void react() const override
+			{
+				return Registrar::react(*this);
+			}
+
 			virtual void call() final
 			{
 				process();

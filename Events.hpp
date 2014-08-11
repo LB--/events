@@ -22,10 +22,13 @@ namespace resplunk
 		{
 			using Priority_t = std::intmax_t;
 
-			static constexpr ListenerPriority FIRST = std::numeric_limits<Priority_t>::min();
-			static constexpr ListenerPriority LAST  = std::numeric_limits<Priority_t>::max();
+			static constexpr Priority_t FIRST = std::numeric_limits<Priority_t>::min();
+			static constexpr Priority_t LAST  = std::numeric_limits<Priority_t>::max();
 
-			constexpr ListenerPriority() = default;
+			constexpr ListenerPriority()
+			: priority{}
+			{
+			}
 			constexpr ListenerPriority(Priority_t p)
 			: priority{p}
 			{
@@ -34,9 +37,8 @@ namespace resplunk
 			ListenerPriority &operator=(ListenerPriority const &) = delete;
 			constexpr ListenerPriority(ListenerPriority &&) = default;
 			ListenerPriority &operator=(ListenerPriority &&) = delete;
-			constexpr ~ListenerPriority() = default;
 
-			constexpr operator Priorty_t() const
+			constexpr operator Priority_t() const
 			{
 				return priority;
 			}
@@ -94,14 +96,14 @@ namespace resplunk
 		struct LambdaEventProcessor
 		: EventProcessor<EventT>
 		{
-			using Lambda_t = std::function<void (E &e) const>;
+			using Lambda_t = std::function<void (EventT &e) const>;
 		protected:
 			LambdaEventProcessor(Lambda_t l)
 			: lambda(l)
 			{
 			}
 
-			virtual void onEvent(E &e) const override
+			virtual void onEvent(EventT &e) const override
 			{
 				return lambda(e);
 			}
@@ -150,14 +152,14 @@ namespace resplunk
 		struct LambdaEventReactor
 		: EventReactor<EventT>
 		{
-			using Lambda_t = std::function<void (E const &e)>;
+			using Lambda_t = std::function<void (EventT const &e)>;
 		protected:
 			LambdaEventReactor(Lambda_t l)
 			: lambda(l)
 			{
 			}
 
-			virtual void onEvent(E const &e) override
+			virtual void onEvent(EventT const &e) override
 			{
 				return lambda(e);
 			}
@@ -165,9 +167,6 @@ namespace resplunk
 		private:
 			Lambda_t lambda;
 		};
-
-		template<typename T>
-		struct DestructEvent;
 
 		template<typename EventT>
 		struct EventRegistrar final
@@ -206,7 +205,7 @@ namespace resplunk
 				auto &reacts = reactors(r.server());
 				for(auto it = reacts.begin(); it != reacts.end(); )
 				{
-					if(std::addressof(p) == std::addressof(it->second.get()))
+					if(std::addressof(r) == std::addressof(it->second.get()))
 					{
 						it = reacts.erase(it);
 					}
@@ -219,10 +218,13 @@ namespace resplunk
 				auto &procs = processors(e.server());
 				for(auto it = procs.begin(); it != procs.end(); ++it)
 				{
+#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
 					try
+#endif
 					{
-						it->second.get()->onEvent(e);
+						it->second.get().onEvent(e);
 					}
+#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
 					catch(std::exception &e)
 					{
 						//
@@ -231,6 +233,7 @@ namespace resplunk
 					{
 						//
 					}
+#endif
 				}
 			}
 			static void react(E const &e)
@@ -238,10 +241,13 @@ namespace resplunk
 				auto &reacts = reactors(e.server());
 				for(auto it = reacts.begin(); it != reacts.end(); ++it)
 				{
+#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
 					try
+#endif
 					{
-						it->second.get()->onEvent(e);
+						it->second.get().onEvent(e);
 					}
+#if defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS
 					catch(std::exception &e)
 					{
 						//
@@ -250,101 +256,64 @@ namespace resplunk
 					{
 						//
 					}
+#endif
 				}
 			}
 
 		private:
 			struct Key final {};
-			using Processors_t = std::map<Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Processor const>>>;
-			using Reactors_t = std::map<Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Reactor>>>;
-			using SDReactors_t = std::map<Server const *, std::unique_ptr<ServerDestructReactor>>;
+			using Processors_t = std::map<server::Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Processor const>>>;
+			using Reactors_t = std::map<server::Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Reactor>>>;
 			static Processors_t &processors()
 			{
-				return TemplateImplRepo::get<Key, Processors_t>();
+				return util::TemplateImplRepo::get<Key, Processors_t>();
 			}
-			static Reactors_t &reactors()
+			static auto reactors()
+			-> Reactors_t &
 			{
-				return TemplateImplRepo::get<Key, Reactors_t>();
+				return util::TemplateImplRepo::get<Key, Reactors_t>();
 			}
-			static ServerDestructReactors_t &sdreactors()
+			static auto processors(server::Server &s)
+			-> typename Processors_t::mapped_type &
 			{
-				return TemplateImplRepo::get<Key, SDReactors_t>();
-			}
-			static void sdreactors(Server &s)
-			{
-				if(sdreactors().find(&s) == sdreactors().end())
-				{
-					sdreactors().emplace
-					(
-						SDReactors_t::key_type{&s},
-						SDReactors_t::mapped_type{new ServerDestructReactor{s}}
-					);
-				}
-				else if(!sdreactors()[&s])
-				{
-					sdreactors().erase(&s);
-				}
-			}
-			static Processors_t::mapped_type &processors(Server &s)
-			{
-				if(processors().find(&s) == processors().end())
-				{
-					sdreactors(s);
-				}
 				return processors()[&s];
 			}
-			static Reactors_t::mapped_type &reactors(Server &s)
+			static auto reactors(server::Server &s)
+			-> typename Reactors_t::mapped_type &
 			{
-				if(reactors().find(&s) == reactors().end())
-				{
-					sdreactors(s);
-				}
 				return reactors()[&s];
 			}
-			static Processors_t::mapped_type &processors(Server const &s)
+			static auto processors(server::Server const &s)
+			-> typename Processors_t::mapped_type &
 			{
 				auto it = processors().find(&s);
 				if(it != processors().end())
 				{
 					return it->second;
 				}
-				return {};
+				static typename Processors_t::mapped_type empty;
+				empty.clear();
+				return empty;
 			}
-			static Reactors_t::mapped_type &reactors(Server const &s)
+			static auto reactors(server::Server const &s)
+			-> typename Reactors_t::mapped_type &
 			{
 				auto it = reactors().find(&s);
 				if(it != reactors().end())
 				{
 					return it->second;
 				}
-				return {};
+				static typename Reactors_t::mapped_type empty;
+				empty.clear();
+				return empty;
 			}
-			struct ServerDestructReactor final
-			: private EventReactor<DestructEvent<Server>>
-			{
-				ServerDestructReactor(Server &s)
-				: ServerSpecific(s)
-				, EventReactor<DestructEvent<Server>>(ListenerPriority::LAST)
-				{
-				}
-
-			private:
-				virtual void onEvent(E const &e) override
-				{
-					auto This = std::move(sdreactors()[&server()]);
-					processors().erase(&e.instance());
-					reactors().erase(&e.instance());
-				}
-			};
 		};
 
 		template<typename EventT, typename ParentT>
 		struct EventImplementor
 		: virtual ParentT
 		{
-			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			static_assert(std::is_base_of<Event, ParentT>::value, "ParentT must derive from Event");
-			static_assert(std::is_base_of<EventT, ParentT>::value, "EventT must derive from ParentT");
 			using E = EventT;
 			using ParentE = ParentT;
 			using Implementor = EventImplementor;
@@ -375,16 +344,16 @@ namespace resplunk
 			virtual void process() override
 			{
 				ParentE::process();
-				return Registrar::process(*this);
+				return Registrar::process(dynamic_cast<E &>(*this));
 			}
 			virtual void react() const override
 			{
 				ParentE::react();
-				return Registrar::react(*this);
+				return Registrar::react(dynamic_cast<E const &>(*this));
 			}
 		};
 		template<typename EventT, typename ParentT>
-		EventImplementor::~EventImplementor() = default;
+		EventImplementor<EventT, ParentT>::~EventImplementor<EventT, ParentT>() = default;
 
 		template<typename EventT>
 		struct EventImplementor<EventT, void>
@@ -422,14 +391,8 @@ namespace resplunk
 				return Registrar::ignore(r);
 			}
 
-			virtual void process()
-			{
-				return Registrar::process(*this);
-			}
-			virtual void react() const
-			{
-				return Registrar::react(*this);
-			}
+			virtual void process() = 0;
+			virtual void react() const = 0;
 		};
 		template<typename EventT>
 		EventImplementor<EventT, void>::~EventImplementor<EventT, void>() = default;

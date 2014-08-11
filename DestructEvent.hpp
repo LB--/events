@@ -9,7 +9,7 @@ namespace resplunk
 	{
 		template<typename T>
 		struct DestructEvent final
-		: EventImplementor<DestructEvent, Event>
+		: EventImplementor<DestructEvent<T>, Event>
 		{
 			T &instance()
 			{
@@ -22,12 +22,12 @@ namespace resplunk
 
 		private:
 			T &inst;
-			DestructEvent(Server &s, T &inst)
-			: ServerSpecific(s)
+			DestructEvent(server::Server &s, T &inst)
+			: server::ServerSpecific(s)
 			, inst(inst)
 			{
 			}
-			friend T::~T();
+			friend T/*::~T()*/;
 		};
 	}
 }
