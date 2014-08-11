@@ -221,7 +221,7 @@ namespace resplunk
 				{
 					try
 					{
-						it->second.get().onEvent(e);
+						it->second.get()->onEvent(e);
 					}
 					catch(std::exception &e)
 					{
@@ -240,7 +240,7 @@ namespace resplunk
 				{
 					try
 					{
-						it->second.get().onEvent(e);
+						it->second.get()->onEvent(e);
 					}
 					catch(std::exception &e)
 					{
