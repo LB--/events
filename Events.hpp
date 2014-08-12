@@ -1,7 +1,6 @@
 #ifndef resplunk_event_Events_HeaderPlusPlus
 #define resplunk_event_Events_HeaderPlusPlus
 
-#include "resplunk/server/ServerSpecific.hpp"
 #include "resplunk/util/TemplateImplRepo.hpp"
 
 #include <cstdint>
@@ -61,7 +60,6 @@ namespace resplunk
 
 		template<typename EventT>
 		struct EventProcessor
-		: virtual server::ServerSpecific
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
@@ -98,25 +96,23 @@ namespace resplunk
 		struct LambdaEventProcessor
 		: EventProcessor<EventT>
 		{
-			using Lambda_t = std::function<void (EventT &e) const>;
-		protected:
-			LambdaEventProcessor(Lambda_t l)
-			: lambda(l)
+			using Lambda_t = std::function<void (EventT &e) /*const*/>;
+			LambdaEventProcessor(Lambda_t l, ListenerPriority priority = ListenerPriority{})
+			: EventProcessor<EventT>(priority)
+			, lambda(l)
 			{
-			}
-
-			virtual void onEvent(EventT &e) const override
-			{
-				return lambda(e);
 			}
 
 		private:
 			Lambda_t lambda;
+			virtual void onEvent(EventT &e) const override
+			{
+				return lambda(e);
+			}
 		};
 
 		template<typename EventT>
 		struct EventReactor
-		: virtual server::ServerSpecific
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
@@ -154,19 +150,18 @@ namespace resplunk
 		: EventReactor<EventT>
 		{
 			using Lambda_t = std::function<void (EventT const &e)>;
-		protected:
-			LambdaEventReactor(Lambda_t l)
-			: lambda(l)
+			LambdaEventReactor(Lambda_t l, ListenerPriority priority = ListenerPriority{})
+			: EventReactor<EventT>(priority)
+			, lambda(l)
 			{
-			}
-
-			virtual void onEvent(EventT const &e) override
-			{
-				return lambda(e);
 			}
 
 		private:
 			Lambda_t lambda;
+			virtual void onEvent(EventT const &e) override
+			{
+				return lambda(e);
+			}
 		};
 
 		template<typename EventT>
@@ -180,16 +175,16 @@ namespace resplunk
 
 			static void listen(Processor const &p, ListenerPriority priority = ListenerPriority{})
 			{
-				processors(p.server()).emplace(priority, std::cref(p));
+				processors().emplace(priority, std::cref(p));
 			}
 			static void listen(Reactor &r, ListenerPriority priority = ListenerPriority{})
 			{
-				reactors(r.server()).emplace(priority, std::ref(r));
+				reactors().emplace(priority, std::ref(r));
 			}
 
 			static void ignore(Processor const &p)
 			{
-				auto &procs = processors(p.server());
+				auto &procs = processors();
 				for(auto it = procs.begin(); it != procs.end(); )
 				{
 					if(std::addressof(p) == std::addressof(it->second.get()))
@@ -201,7 +196,7 @@ namespace resplunk
 			}
 			static void ignore(Reactor &r)
 			{
-				auto &reacts = reactors(r.server());
+				auto &reacts = reactors();
 				for(auto it = reacts.begin(); it != reacts.end(); )
 				{
 					if(std::addressof(r) == std::addressof(it->second.get()))
@@ -218,7 +213,7 @@ namespace resplunk
 				{
 					return;
 				}
-				auto &procs = processors(e.server());
+				auto &procs = processors();
 				for(auto it = procs.begin(); it != procs.end(); ++it)
 				{
 #if !defined(_HAS_EXCEPTIONS) || _HAS_EXCEPTIONS
@@ -245,7 +240,7 @@ namespace resplunk
 				{
 					return;
 				}
-				auto &reacts = reactors(e.server());
+				auto &reacts = reactors();
 				for(auto it = reacts.begin(); it != reacts.end(); ++it)
 				{
 #if !defined(_HAS_EXCEPTIONS) || _HAS_EXCEPTIONS
@@ -272,8 +267,8 @@ namespace resplunk
 			{
 				Key() = delete;
 			};
-			using Processors_t = std::map<server::Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Processor const>>>;
-			using Reactors_t = std::map<server::Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Reactor>>>;
+			using Processors_t = std::multimap<ListenerPriority, std::reference_wrapper<Processor const>>;
+			using Reactors_t = std::multimap<ListenerPriority, std::reference_wrapper<Reactor>>;
 			static Processors_t &processors()
 			{
 				return util::TemplateImplRepo::get<Key, Processors_t>();
@@ -282,16 +277,6 @@ namespace resplunk
 			-> Reactors_t &
 			{
 				return util::TemplateImplRepo::get<Key, Reactors_t>();
-			}
-			static auto processors(server::Server const &s)
-			-> typename Processors_t::mapped_type &
-			{
-				return processors()[&s];
-			}
-			static auto reactors(server::Server const &s)
-			-> typename Reactors_t::mapped_type &
-			{
-				return reactors()[&s];
 			}
 		};
 
@@ -428,7 +413,6 @@ namespace resplunk
 
 		template<typename EventT>
 		struct EventImplementor<EventT, void>
-		: virtual server::ServerSpecific
 		{
 			static_assert(std::is_same<EventT, Event>::value, "This can only be derived by Event");
 			using E = EventT;
@@ -462,8 +446,14 @@ namespace resplunk
 				return Registrar::ignore(r);
 			}
 
-			virtual void process() = 0;
-			virtual void react() const = 0;
+			virtual void process()
+			{
+				Registrar::process(dynamic_cast<E &>(*this));
+			}
+			virtual void react() const
+			{
+				Registrar::react(dynamic_cast<E const &>(*this));
+			}
 		};
 		template<typename EventT>
 		EventImplementor<EventT, void>::~EventImplementor<EventT, void>() = default;

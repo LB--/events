@@ -22,9 +22,8 @@ namespace resplunk
 
 		private:
 			T &inst;
-			DestructEvent(server::Server &s, T &inst)
-			: server::ServerSpecific(s)
-			, inst(inst)
+			DestructEvent(T &inst)
+			: inst(inst)
 			{
 			}
 			friend T/*::~T()*/;
