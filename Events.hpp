@@ -321,10 +321,16 @@ namespace resplunk
 			{
 				ReactKey() = delete;
 			};
+			struct PR
+			{
+				virtual void process() = 0;
+				virtual void react() const = 0;
+			};
 		}
 		template<typename EventT, typename... ParentT>
 		struct EventImplementor
-		: virtual ParentT...
+		: virtual impl::PR
+		, virtual ParentT...
 		{
 			using Unwrapper = impl::Unwrapper<EventImplementor, ParentT...>;
 			using E = EventT;
@@ -334,6 +340,7 @@ namespace resplunk
 			using Reactor = EventReactor<EventT>;
 			using Registrar = EventRegistrar<EventT>;
 			static constexpr bool MI = (sizeof...(ParentT) > 1);
+			static constexpr bool ROOT = (sizeof...(ParentT) == 0);
 			EventImplementor() = default;
 			virtual ~EventImplementor() = 0;
 
@@ -410,53 +417,6 @@ namespace resplunk
 		};
 		template<typename EventT, typename... ParentT>
 		EventImplementor<EventT, ParentT...>::~EventImplementor<EventT, ParentT...>() = default;
-
-		template<typename EventT>
-		struct EventImplementor<EventT, void>
-		{
-			static_assert(std::is_same<EventT, Event>::value, "This can only be derived by Event");
-			using E = EventT;
-			using ParentE = void;
-			using Implementor = EventImplementor;
-			using Processor = EventProcessor<EventT>;
-			using Reactor = EventReactor<EventT>;
-			using Registrar = EventRegistrar<EventT>;
-			EventImplementor() = default;
-			EventImplementor(EventImplementor const &) = delete;
-			EventImplementor &operator=(EventImplementor const &) = delete;
-			EventImplementor(EventImplementor &&) = delete;
-			EventImplementor &operator=(EventImplementor &&) = delete;
-			virtual ~EventImplementor() = 0;
-
-			static void listen(Processor const &p, ListenerPriority priority = ListenerPriority{})
-			{
-				return Registrar::listen(p, priority);
-			}
-			static void listen(Reactor &r, ListenerPriority priority = ListenerPriority{})
-			{
-				return Registrar::listen(r, priority);
-			}
-
-			static void ignore(Processor const &p)
-			{
-				return Registrar::ignore(p);
-			}
-			static void ignore(Reactor &r)
-			{
-				return Registrar::ignore(r);
-			}
-
-			virtual void process()
-			{
-				Registrar::process(dynamic_cast<E &>(*this));
-			}
-			virtual void react() const
-			{
-				Registrar::react(dynamic_cast<E const &>(*this));
-			}
-		};
-		template<typename EventT>
-		EventImplementor<EventT, void>::~EventImplementor<EventT, void>() = default;
 	}
 }
 

@@ -8,7 +8,7 @@ namespace resplunk
 	namespace event
 	{
 		struct Event
-		: EventImplementor<Event, void>
+		: EventImplementor<Event>
 		{
 			virtual ~Event() = 0;
 
