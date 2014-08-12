@@ -304,6 +304,7 @@ namespace resplunk
 			template<typename T>
 			struct Unwrapper<T> final
 			{
+				static_assert(std::is_base_of<Event, typename T::E>::value, "Only Event can be root");
 				Unwrapper() = delete;
 				static void process(T &t)
 				{
