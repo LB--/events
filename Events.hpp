@@ -313,7 +313,6 @@ namespace resplunk
 			using Registrar_t = EventRegistrar<EventT>;
 			static constexpr bool MI = (sizeof...(ParentT) > 1);
 			static constexpr bool ROOT = (sizeof...(ParentT) == 0);
-			EventImplementor() = default;
 			virtual ~EventImplementor() = 0;
 
 			static void listen(Processor_t const &p, ListenerPriority priority = ListenerPriority{}) noexcept
@@ -386,6 +385,10 @@ namespace resplunk
 					guard.pop();
 				}
 			}
+
+		private:
+			EventImplementor() = default;
+			friend EventT;
 		};
 		template<typename EventT, typename... ParentT>
 		EventImplementor<EventT, ParentT...>::~EventImplementor<EventT, ParentT...>() = default;
