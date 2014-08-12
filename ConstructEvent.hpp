@@ -22,9 +22,8 @@ namespace resplunk
 
 		private:
 			T &inst;
-			ConstructEvent(server::Server &s, T &inst)
-			: server::ServerSpecific(s)
-			, inst(inst)
+			ConstructEvent(T &inst)
+			: inst(inst)
 			{
 			}
 			friend T;
