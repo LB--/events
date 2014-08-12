@@ -11,6 +11,8 @@
 #include <memory>
 #include <map>
 #include <exception>
+#include <stack>
+#include <set>
 #include <tuple>
 
 namespace resplunk
@@ -266,7 +268,10 @@ namespace resplunk
 			}
 
 		private:
-			struct Key final {};
+			struct Key final
+			{
+				Key() = delete;
+			};
 			using Processors_t = std::map<server::Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Processor const>>>;
 			using Reactors_t = std::map<server::Server const *, std::multimap<ListenerPriority, std::reference_wrapper<Reactor>>>;
 			static Processors_t &processors()
@@ -292,60 +297,58 @@ namespace resplunk
 
 		namespace impl
 		{
-			template<typename...>
-			struct EventBaseAsserter;
-			template<typename First, typename... Rest>
-			struct EventBaseAsserter<First, Rest...> final
+			template<typename T, typename...>
+			struct Unwrapper;
+			template<typename T, typename First, typename... Rest>
+			struct Unwrapper<T, First, Rest...> final
 			{
 				static_assert(std::is_base_of<Event, First>::value, "ParentT must derive from Event");
-				using Next = EventBaseAsserter<Rest...>;
-				EventBaseAsserter() = delete;
-			};
-			template<>
-			struct EventBaseAsserter<> final
-			{
-				EventBaseAsserter() = delete;
-			};
-			template<typename T, typename...>
-			struct Caller;
-			template<typename T, typename First, typename... Rest>
-			struct Caller<T, First, Rest...> final
-			{
-				Caller() = delete;
+				using Next = Unwrapper<T, Rest...>;
+				Unwrapper() = delete;
 				static void process(T &t)
 				{
 					t.First::process();
-					Caller<T, Rest...>::process(t);
+					Next::process(t);
 				}
 				static void react(T const &t)
 				{
 					t.First::react();
-					Caller<T, Rest...>::react(t);
+					Next::react(t);
 				}
 			};
 			template<typename T>
-			struct Caller<T> final
+			struct Unwrapper<T> final
 			{
-				Caller() = delete;
+				Unwrapper() = delete;
 				static void process(T &t)
 				{
 				}
 				static void react(T const &t)
 				{
 				}
+			};
+			using Guard_t = std::stack<std::set<std::type_index>>;
+			struct ProcessKey final
+			{
+				ProcessKey() = delete;
+			};
+			struct ReactKey final
+			{
+				ReactKey() = delete;
 			};
 		}
 		template<typename EventT, typename... ParentT>
 		struct EventImplementor
 		: virtual ParentT...
 		{
-			using Asserter = impl::EventBaseAsserter<ParentT...>;
+			using Unwrapper = impl::Unwrapper<EventImplementor, ParentT...>;
 			using E = EventT;
 			using ParentE = std::tuple<ParentT...>;
 			using Implementor = EventImplementor;
 			using Processor = EventProcessor<EventT>;
 			using Reactor = EventReactor<EventT>;
 			using Registrar = EventRegistrar<EventT>;
+			static constexpr bool MI = (sizeof...(ParentT) > 1);
 			EventImplementor() = default;
 			virtual ~EventImplementor() = 0;
 
@@ -369,13 +372,55 @@ namespace resplunk
 
 			virtual void process() override
 			{
-				impl::Caller<EventImplementor, ParentT...>::process(*this);
-				return Registrar::process(dynamic_cast<E &>(*this));
+				using namespace impl;
+				Guard_t &guard = util::TemplateImplRepo::get<ProcessKey, Guard_t>();
+				if(typeid(*this) == typeid(E))
+				{
+					guard.emplace();
+					guard.top().emplace(typeid(E));
+				}
+				else if(guard.top().find(typeid(E)) != guard.top().end())
+				{
+					return;
+				}
+				else
+				{
+					guard.top().emplace(typeid(E));
+				}
+
+				Unwrapper::process(*this);
+				Registrar::process(dynamic_cast<E &>(*this));
+
+				if(typeid(*this) == typeid(E))
+				{
+					guard.pop();
+				}
 			}
 			virtual void react() const override
 			{
-				impl::Caller<EventImplementor, ParentT...>::react(*this);
-				return Registrar::react(dynamic_cast<E const &>(*this));
+				using namespace impl;
+				Guard_t &guard = util::TemplateImplRepo::get<ReactKey, Guard_t>();
+				if(typeid(*this) == typeid(E))
+				{
+					guard.emplace();
+					guard.top().emplace(typeid(E));
+				}
+				else if(guard.top().find(typeid(E)) != guard.top().end())
+				{
+					return;
+				}
+				else
+				{
+					guard.top().emplace(typeid(E));
+				}
+
+				Unwrapper::react(*this);
+				Registrar::react(dynamic_cast<E const &>(*this));
+
+				if(typeid(*this) == typeid(E))
+				{
+					guard.pop();
+				}
 			}
 		};
 		template<typename EventT, typename... ParentT>
