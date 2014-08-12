@@ -1,7 +1,7 @@
 #ifndef resplunk_event_DestructEvent_HeaderPlusPlus
 #define resplunk_event_DestructEvent_HeaderPlusPlus
 
-#include "resplunk/event/Event.hpp"
+#include "resplunk/util/SpecificToEvent.hpp"
 
 namespace resplunk
 {
@@ -9,21 +9,11 @@ namespace resplunk
 	{
 		template<typename T>
 		struct DestructEvent final
-		: EventImplementor<DestructEvent<T>, Event>
+		: EventImplementor<DestructEvent<T>, util::SpecificToEvent<T>>
 		{
-			T &instance()
-			{
-				return inst;
-			}
-			T const &instance() const
-			{
-				return inst;
-			}
-
 		private:
-			T &inst;
 			DestructEvent(T &inst)
-			: inst(inst)
+			: util::SpecificTo<T>(inst)
 			{
 			}
 			friend T/*::~T()*/;

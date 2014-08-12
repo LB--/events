@@ -1,7 +1,7 @@
 #ifndef resplunk_event_ConstructEvent_HeaderPlusPlus
 #define resplunk_event_ConstructEvent_HeaderPlusPlus
 
-#include "resplunk/event/Event.hpp"
+#include "resplunk/util/SpecificToEvent.hpp"
 
 namespace resplunk
 {
@@ -9,21 +9,11 @@ namespace resplunk
 	{
 		template<typename T>
 		struct ConstructEvent
-		: EventImplementor<ConstructEvent<T>, Event>
+		: EventImplementor<ConstructEvent<T>, util::SpecificToEvent<T>>
 		{
-			virtual T &instance() final
-			{
-				return inst;
-			}
-			virtual T const &instance() const final
-			{
-				return inst;
-			}
-
 		private:
-			T &inst;
 			ConstructEvent(T &inst)
-			: inst(inst)
+			: util::SpecificTo<T>(inst)
 			{
 			}
 			friend T;
