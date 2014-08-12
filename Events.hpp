@@ -270,6 +270,14 @@ namespace resplunk
 					t.First::react();
 					Next::react(t);
 				}
+				static auto parents(T &t) noexcept
+				{
+					return tuple_cat(std::tuple<First &>{t}, Next::parents(t));
+				}
+				static auto parents(T const &t) noexcept
+				{
+					return tuple_cat(std::tuple<First const &>{t}, Next::parents(t));
+				}
 			};
 			template<typename T>
 			struct Unwrapper<T> final
@@ -281,6 +289,16 @@ namespace resplunk
 				}
 				static void react(T const &t) noexcept
 				{
+				}
+				static auto parents(T &t) noexcept
+				-> std::tuple<>
+				{
+					return {};
+				}
+				static auto parents(T const &t) noexcept
+				-> std::tuple<>
+				{
+					return {};
 				}
 			};
 			using Guard_t = std::stack<std::set<std::type_index>>;
@@ -306,7 +324,8 @@ namespace resplunk
 		{
 			using Unwrapper_t = impl::Unwrapper<EventImplementor, ParentT...>;
 			using E = EventT;
-			using Parents_t = std::tuple<ParentT...>;
+			using Parents_t = std::tuple<ParentT &...>;
+			using ConstParents_t = std::tuple<ParentT const &...>;
 			using EventImplementor_t = EventImplementor;
 			using Processor_t = EventProcessor<EventT>;
 			using Reactor_t = EventReactor<EventT>;
@@ -392,6 +411,19 @@ namespace resplunk
 		};
 		template<typename EventT, typename... ParentT>
 		EventImplementor<EventT, ParentT...>::~EventImplementor<EventT, ParentT...>() = default;
+
+		template<typename EventT, typename... ParentT>
+		auto parents(EventImplementor<EventT, ParentT...> &e) noexcept
+		-> typename std::remove_reference<decltype(e)>::type::Parents_t
+		{
+			return std::remove_reference<decltype(e)>::type::Unwrapper_t::parents(e);
+		}
+		template<typename EventT, typename... ParentT>
+		auto parents(EventImplementor<EventT, ParentT...> const &e) noexcept
+		-> typename std::remove_reference<decltype(e)>::type::ConstParents_t
+		{
+			return std::remove_reference<decltype(e)>::type::Unwrapper_t::parents(e);
+		}
 	}
 }
 
