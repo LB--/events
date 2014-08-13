@@ -11,8 +11,6 @@
 #include <memory>
 #include <map>
 
-#include <iostream>
-
 namespace resplunk
 {
 	namespace event
