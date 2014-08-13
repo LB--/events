@@ -1,2 +1,2 @@
-[`Check out the wiki.`](https://github.com/LB--/Recipe-Spelunker/wiki)
-======================================================================
+[`Check out the wiki.`](https://github.com/LB--/resplunk/wiki)
+==============================================================
