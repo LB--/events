@@ -12,17 +12,17 @@ namespace resplunk
 		{
 			virtual ~Event() = 0;
 
-			virtual void call() final
+			virtual void call() noexcept final
 			{
 				process();
 				react();
 			}
 
-			virtual bool shouldProcess() const
+			virtual bool shouldProcess() const noexcept
 			{
 				return true;
 			}
-			virtual bool shouldReact() const
+			virtual bool shouldReact() const noexcept
 			{
 				return true;
 			}

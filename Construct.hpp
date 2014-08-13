@@ -13,7 +13,7 @@ namespace resplunk
 		{
 			using typename util::SpecificToEvent<T>::SpecificTo_t;
 		private:
-			Construct(T &inst)
+			Construct(T &inst) noexcept
 			: SpecificTo_t(inst)
 			{
 			}

@@ -12,16 +12,16 @@ namespace resplunk
 		{
 			virtual ~Cancellable() = 0;
 
-			virtual void cancelled(bool c)
+			virtual void cancelled(bool c) noexcept
 			{
 				cancel = c;
 			}
-			virtual bool cancelled() const final
+			virtual bool cancelled() const noexcept final
 			{
 				return cancel;
 			}
 
-			virtual bool shouldReact() const override
+			virtual bool shouldReact() const noexcept override
 			{
 				return !cancel;
 			}
