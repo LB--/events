@@ -86,7 +86,7 @@ namespace resplunk
 			}
 
 		private:
-			virtual void onEvent(E &e) const noexcept = 0;
+			virtual void process(E &e) const noexcept = 0;
 
 			friend typename E::Registrar_t;
 		};
@@ -104,7 +104,7 @@ namespace resplunk
 
 		private:
 			Lambda_t lambda;
-			virtual void onEvent(EventT &e) const noexcept override
+			virtual void process(EventT &e) const noexcept override
 			{
 				return lambda(e);
 			}
@@ -139,7 +139,7 @@ namespace resplunk
 			}
 
 		private:
-			virtual void onEvent(E const &e) noexcept = 0;
+			virtual void react(E const &e) noexcept = 0;
 
 			friend typename E::Registrar_t;
 		};
@@ -157,7 +157,7 @@ namespace resplunk
 
 		private:
 			Lambda_t lambda;
-			virtual void onEvent(EventT const &e) noexcept override
+			virtual void react(EventT const &e) noexcept override
 			{
 				return lambda(e);
 			}
@@ -215,7 +215,7 @@ namespace resplunk
 				auto &procs = processors();
 				for(auto it = procs.begin(); it != procs.end(); ++it)
 				{
-					it->second.get().onEvent(e);
+					it->second.get().process(e);
 				}
 			}
 			static void react(E const &e) noexcept
@@ -227,7 +227,7 @@ namespace resplunk
 				auto &reacts = reactors();
 				for(auto it = reacts.begin(); it != reacts.end(); ++it)
 				{
-					it->second.get().onEvent(e);
+					it->second.get().react(e);
 				}
 			}
 
