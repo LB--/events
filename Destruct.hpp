@@ -11,9 +11,10 @@ namespace resplunk
 		struct Destruct final
 		: Implementor<Destruct<T>, util::SpecificToEvent<T>>
 		{
+			using typename util::SpecificToEvent<T>::SpecificTo_t;
 		private:
 			Destruct(T &inst)
-			: util::SpecificTo<T>(inst)
+			: SpecificTo_t(inst)
 			{
 			}
 			friend T/*::~T()*/;

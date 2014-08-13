@@ -11,12 +11,13 @@ namespace resplunk
 		struct Construct
 		: Implementor<Construct<T>, util::SpecificToEvent<T>>
 		{
+			using typename util::SpecificToEvent<T>::SpecificTo_t;
 		private:
 			Construct(T &inst)
-			: util::SpecificTo<T>(inst)
+			: SpecificTo_t(inst)
 			{
 			}
-			friend T;
+			friend T/*::T(Args...)*/;
 		};
 	}
 }
