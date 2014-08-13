@@ -286,6 +286,7 @@ namespace resplunk
 				using all_parents_t = typename util::tuple_type_cat
 				<
 					typename First::Unwrapper_t::all_parents_t,
+					typename Rest::Unwrapper_t::all_parents_t...,
 					std::tuple<First>,
 					typename Next::all_parents_t
 				>::type;
