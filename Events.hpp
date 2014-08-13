@@ -170,13 +170,13 @@ namespace resplunk
 		};
 
 		template<typename EventT>
-		struct EventRegistrar final
+		struct Registrar final
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
 			using Processor = Processor<EventT>;
 			using Reactor = Reactor<EventT>;
-			EventRegistrar() = delete;
+			Registrar() = delete;
 
 			static void listen(Processor const &p, ListenerPriority priority = ListenerPriority{}) noexcept
 			{
@@ -335,7 +335,7 @@ namespace resplunk
 			using Implementor_t = Implementor;
 			using Processor_t = Processor<EventT>;
 			using Reactor_t = Reactor<EventT>;
-			using Registrar_t = EventRegistrar<EventT>;
+			using Registrar_t = Registrar<EventT>;
 			static constexpr bool MI = (sizeof...(ParentT) > 1);
 			static constexpr bool ROOT = (sizeof...(ParentT) == 0);
 			virtual ~Implementor() = 0;
