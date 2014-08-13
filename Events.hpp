@@ -2,6 +2,7 @@
 #define resplunk_event_Events_HeaderPlusPlus
 
 #include "resplunk/util/TemplateImplRepo.hpp"
+#include "resplunk/util/Tuples.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -9,9 +10,8 @@
 #include <functional>
 #include <memory>
 #include <map>
-#include <stack>
-#include <set>
-#include <tuple>
+
+#include <iostream>
 
 namespace resplunk
 {
@@ -98,7 +98,11 @@ namespace resplunk
 			using Lambda_t = std::function<void (EventT &e) /*const*/>;
 			LambdaProcessor(Lambda_t l, ListenerPriority priority = ListenerPriority{}) noexcept
 			: Processor<EventT>(priority)
-			, lambda(l)
+			, lambda{l}
+			{
+			}
+			LambdaProcessor(LambdaProcessor &&from)
+			: lambda{std::move(from.lambda)}
 			{
 			}
 
@@ -151,7 +155,11 @@ namespace resplunk
 			using Lambda_t = std::function<void (EventT const &e)>;
 			LambdaReactor(Lambda_t l, ListenerPriority priority = ListenerPriority{})
 			: Reactor<EventT>(priority) noexcept
-			, lambda(l)
+			, lambda{l}
+			{
+			}
+			LambdaReactor(LambdaReactor &&from)
+			: lambda{std::move(from.lambda)}
 			{
 			}
 
@@ -261,12 +269,12 @@ namespace resplunk
 				Unwrapper() = delete;
 				static void process(T &t) noexcept
 				{
-					t.First::process();
+					First::Registrar_t::process(t);
 					Next::process(t);
 				}
 				static void react(T const &t) noexcept
 				{
-					t.First::react();
+					First::Registrar_t::react(t);
 					Next::react(t);
 				}
 				static auto parents(T &t) noexcept
@@ -277,6 +285,12 @@ namespace resplunk
 				{
 					return tuple_cat(std::tuple<First const &>{t}, Next::parents(t));
 				}
+				using all_parents_t = typename util::tuple_type_cat
+				<
+					typename First::Unwrapper_t::all_parents_t,
+					std::tuple<First>,
+					typename Next::all_parents_t
+				>::type;
 			};
 			template<typename T>
 			struct Unwrapper<T> final
@@ -285,9 +299,11 @@ namespace resplunk
 				Unwrapper() = delete;
 				static void process(T &t) noexcept
 				{
+					T::Registrar_t::process(dynamic_cast<typename T::E &>(t));
 				}
 				static void react(T const &t) noexcept
 				{
+					T::Registrar_t::react(dynamic_cast<typename T::E const &>(t));
 				}
 				static auto parents(T &t) noexcept
 				-> std::tuple<>
@@ -299,15 +315,7 @@ namespace resplunk
 				{
 					return {};
 				}
-			};
-			using Guard_t = std::stack<std::set<std::type_index>>;
-			struct ProcessKey final
-			{
-				ProcessKey() = delete;
-			};
-			struct ReactKey final
-			{
-				ReactKey() = delete;
+				using all_parents_t = std::tuple<>;
 			};
 			struct PR
 			{
@@ -353,55 +361,33 @@ namespace resplunk
 
 			virtual void process() noexcept override
 			{
-				using namespace impl;
-				Guard_t &guard = util::TemplateImplRepo::get<ProcessKey, Guard_t>();
-				if(typeid(*this) == typeid(E))
-				{
-					guard.emplace();
-					guard.top().emplace(typeid(E));
-				}
-				else if(guard.top().find(typeid(E)) != guard.top().end())
-				{
-					return;
-				}
-				else
-				{
-					guard.top().emplace(typeid(E));
-				}
-
-				Unwrapper_t::process(*this);
-				Registrar_t::process(dynamic_cast<E &>(*this));
-
-				if(typeid(*this) == typeid(E))
-				{
-					guard.pop();
-				}
+				util::tuple_template_forward
+				<
+					impl::Unwrapper,
+					typename util::tuple_type_cat
+					<
+						std::tuple<Implementor_t>,
+						typename util::tuple_prune
+						<
+							typename Unwrapper_t::all_parents_t
+						>::type
+					>::type
+				>::type::process(*this);
 			}
 			virtual void react() const noexcept override
 			{
-				using namespace impl;
-				Guard_t &guard = util::TemplateImplRepo::get<ReactKey, Guard_t>();
-				if(typeid(*this) == typeid(E))
-				{
-					guard.emplace();
-					guard.top().emplace(typeid(E));
-				}
-				else if(guard.top().find(typeid(E)) != guard.top().end())
-				{
-					return;
-				}
-				else
-				{
-					guard.top().emplace(typeid(E));
-				}
-
-				Unwrapper_t::react(*this);
-				Registrar_t::react(dynamic_cast<E const &>(*this));
-
-				if(typeid(*this) == typeid(E))
-				{
-					guard.pop();
-				}
+				util::tuple_template_forward
+				<
+					impl::Unwrapper,
+					typename util::tuple_type_cat
+					<
+						std::tuple<Implementor_t>,
+						typename util::tuple_prune
+						<
+							typename Unwrapper_t::all_parents_t
+						>::type
+					>::type
+				>::type::react(*this);
 			}
 
 		private:
