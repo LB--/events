@@ -9,7 +9,6 @@
 #include <functional>
 #include <memory>
 #include <map>
-#include <exception>
 #include <stack>
 #include <set>
 #include <tuple>
@@ -59,19 +58,19 @@ namespace resplunk
 		};
 
 		template<typename EventT>
-		struct EventProcessor
+		struct Processor
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
-			EventProcessor(ListenerPriority priority = ListenerPriority{}) noexcept
+			Processor(ListenerPriority priority = ListenerPriority{}) noexcept
 			{
 				listen(priority);
 			}
-			EventProcessor(EventProcessor const &) = delete;
-			EventProcessor &operator=(EventProcessor const &) = delete;
-			EventProcessor(EventProcessor &&) = delete;
-			EventProcessor &operator=(EventProcessor &&) = delete;
-			virtual ~EventProcessor() noexcept
+			Processor(Processor const &) = delete;
+			Processor &operator=(Processor const &) = delete;
+			Processor(Processor &&) = delete;
+			Processor &operator=(Processor &&) = delete;
+			virtual ~Processor() noexcept
 			{
 				ignore();
 			}
@@ -93,12 +92,12 @@ namespace resplunk
 		};
 
 		template<typename EventT>
-		struct LambdaEventProcessor
-		: EventProcessor<EventT>
+		struct LambdaProcessor
+		: Processor<EventT>
 		{
 			using Lambda_t = std::function<void (EventT &e) /*const*/>;
-			LambdaEventProcessor(Lambda_t l, ListenerPriority priority = ListenerPriority{}) noexcept
-			: EventProcessor<EventT>(priority)
+			LambdaProcessor(Lambda_t l, ListenerPriority priority = ListenerPriority{}) noexcept
+			: Processor<EventT>(priority)
 			, lambda(l)
 			{
 			}
@@ -112,19 +111,19 @@ namespace resplunk
 		};
 
 		template<typename EventT>
-		struct EventReactor
+		struct Reactor
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
-			EventReactor(ListenerPriority priority = ListenerPriority{}) noexcept
+			Reactor(ListenerPriority priority = ListenerPriority{}) noexcept
 			{
 				listen(priority);
 			}
-			EventReactor(EventReactor const &) = delete;
-			EventReactor &operator=(EventReactor const &) = delete;
-			EventReactor(EventReactor &&) = delete;
-			EventReactor &operator=(EventReactor &&) = delete;
-			virtual ~EventReactor() noexcept
+			Reactor(Reactor const &) = delete;
+			Reactor &operator=(Reactor const &) = delete;
+			Reactor(Reactor &&) = delete;
+			Reactor &operator=(Reactor &&) = delete;
+			virtual ~Reactor() noexcept
 			{
 				ignore();
 			}
@@ -146,12 +145,12 @@ namespace resplunk
 		};
 
 		template<typename EventT>
-		struct LambdaEventReactor
-		: EventReactor<EventT>
+		struct LambdaReactor
+		: Reactor<EventT>
 		{
 			using Lambda_t = std::function<void (EventT const &e)>;
-			LambdaEventReactor(Lambda_t l, ListenerPriority priority = ListenerPriority{})
-			: EventReactor<EventT>(priority) noexcept
+			LambdaReactor(Lambda_t l, ListenerPriority priority = ListenerPriority{})
+			: Reactor<EventT>(priority) noexcept
 			, lambda(l)
 			{
 			}
@@ -169,8 +168,8 @@ namespace resplunk
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using E = EventT;
-			using Processor = EventProcessor<EventT>;
-			using Reactor = EventReactor<EventT>;
+			using Processor = Processor<EventT>;
+			using Reactor = Reactor<EventT>;
 			EventRegistrar() = delete;
 
 			static void listen(Processor const &p, ListenerPriority priority = ListenerPriority{}) noexcept
@@ -318,21 +317,21 @@ namespace resplunk
 			};
 		}
 		template<typename EventT, typename... ParentT>
-		struct EventImplementor
+		struct Implementor
 		: virtual impl::PR
 		, virtual ParentT...
 		{
-			using Unwrapper_t = impl::Unwrapper<EventImplementor, ParentT...>;
+			using Unwrapper_t = impl::Unwrapper<Implementor, ParentT...>;
 			using E = EventT;
 			using Parents_t = std::tuple<ParentT &...>;
 			using ConstParents_t = std::tuple<ParentT const &...>;
-			using EventImplementor_t = EventImplementor;
-			using Processor_t = EventProcessor<EventT>;
-			using Reactor_t = EventReactor<EventT>;
+			using Implementor_t = Implementor;
+			using Processor_t = Processor<EventT>;
+			using Reactor_t = Reactor<EventT>;
 			using Registrar_t = EventRegistrar<EventT>;
 			static constexpr bool MI = (sizeof...(ParentT) > 1);
 			static constexpr bool ROOT = (sizeof...(ParentT) == 0);
-			virtual ~EventImplementor() = 0;
+			virtual ~Implementor() = 0;
 
 			static void listen(Processor_t const &p, ListenerPriority priority = ListenerPriority{}) noexcept
 			{
@@ -406,20 +405,20 @@ namespace resplunk
 			}
 
 		private:
-			EventImplementor() = default;
+			Implementor() = default;
 			friend EventT;
 		};
 		template<typename EventT, typename... ParentT>
-		EventImplementor<EventT, ParentT...>::~EventImplementor<EventT, ParentT...>() = default;
+		Implementor<EventT, ParentT...>::~Implementor<EventT, ParentT...>() = default;
 
 		template<typename EventT, typename... ParentT>
-		auto parents(EventImplementor<EventT, ParentT...> &e) noexcept
+		auto parents(Implementor<EventT, ParentT...> &e) noexcept
 		-> typename std::remove_reference<decltype(e)>::type::Parents_t
 		{
 			return std::remove_reference<decltype(e)>::type::Unwrapper_t::parents(e);
 		}
 		template<typename EventT, typename... ParentT>
-		auto parents(EventImplementor<EventT, ParentT...> const &e) noexcept
+		auto parents(Implementor<EventT, ParentT...> const &e) noexcept
 		-> typename std::remove_reference<decltype(e)>::type::ConstParents_t
 		{
 			return std::remove_reference<decltype(e)>::type::Unwrapper_t::parents(e);

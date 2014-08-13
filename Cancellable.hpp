@@ -1,5 +1,5 @@
-#ifndef resplunk_event_CancellableEvent_HeaderPlusPlus
-#define resplunk_event_CancellableEvent_HeaderPlusPlus
+#ifndef resplunk_event_Cancellable_HeaderPlusPlus
+#define resplunk_event_Cancellable_HeaderPlusPlus
 
 #include "resplunk/event/Event.hpp"
 
@@ -7,10 +7,10 @@ namespace resplunk
 {
 	namespace event
 	{
-		struct CancellableEvent
-		: EventImplementor<CancellableEvent, Event>
+		struct Cancellable
+		: Implementor<Cancellable, Event>
 		{
-			virtual ~CancellableEvent() = 0;
+			virtual ~Cancellable() = 0;
 
 			virtual void cancelled(bool c)
 			{
@@ -29,7 +29,7 @@ namespace resplunk
 		private:
 			bool cancel = false;
 		};
-		inline CancellableEvent::~CancellableEvent() = default;
+		inline Cancellable::~Cancellable() = default;
 	}
 }
 
