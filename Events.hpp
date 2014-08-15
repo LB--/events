@@ -1,14 +1,12 @@
 #ifndef resplunk_event_Events_HeaderPlusPlus
 #define resplunk_event_Events_HeaderPlusPlus
 
-#include "resplunk/util/TemplateImplRepo.hpp"
 #include "resplunk/util/Tuples.hpp"
 
 #include <cstdint>
 #include <limits>
 #include <type_traits>
 #include <functional>
-#include <memory>
 #include <map>
 
 namespace resplunk
@@ -238,20 +236,18 @@ namespace resplunk
 			}
 
 		private:
-			struct Key final
-			{
-				Key() = delete;
-			};
 			using Processors_t = std::multimap<ListenerPriority, std::reference_wrapper<Processor const>>;
 			using Reactors_t = std::multimap<ListenerPriority, std::reference_wrapper<Reactor>>;
 			static Processors_t &processors() noexcept
 			{
-				return util::TemplateImplRepo::get<Key, Processors_t>();
+				static Processors_t p; //TODO: https://github.com/LB--/resplunk/issues/4
+				return p;
 			}
 			static auto reactors() noexcept
 			-> Reactors_t &
 			{
-				return util::TemplateImplRepo::get<Key, Reactors_t>();
+				static Reactors_t r; //TODO: https://github.com/LB--/resplunk/issues/4
+				return r;
 			}
 		};
 
