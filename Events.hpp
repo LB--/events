@@ -57,7 +57,7 @@ namespace resplunk
 		struct Processor
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
-			using E = EventT;
+			using Event_t = EventT;
 			Processor(ListenerPriority priority = ListenerPriority{}) noexcept
 			{
 				listen(priority);
@@ -74,17 +74,17 @@ namespace resplunk
 		protected:
 			void listen(ListenerPriority priority = ListenerPriority{}) noexcept
 			{
-				return E::listen(*this, priority);
+				return Event_t::listen(*this, priority);
 			}
 			void ignore() noexcept
 			{
-				return E::ignore(*this);
+				return Event_t::ignore(*this);
 			}
 
 		private:
-			virtual void process(E &e) const noexcept = 0;
+			virtual void process(Event_t &e) const noexcept = 0;
 
-			friend typename E::Registrar_t;
+			friend typename Event_t::Registrar_t;
 		};
 
 		template<typename EventT>
@@ -114,7 +114,7 @@ namespace resplunk
 		struct Reactor
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
-			using E = EventT;
+			using Event_t = EventT;
 			Reactor(ListenerPriority priority = ListenerPriority{}) noexcept
 			{
 				listen(priority);
@@ -131,17 +131,17 @@ namespace resplunk
 		protected:
 			void listen(ListenerPriority priority = ListenerPriority{}) noexcept
 			{
-				return E::listen(*this, priority);
+				return Event_t::listen(*this, priority);
 			}
 			void ignore() noexcept
 			{
-				return E::ignore(*this);
+				return Event_t::ignore(*this);
 			}
 
 		private:
-			virtual void react(E const &e) noexcept = 0;
+			virtual void react(Event_t const &e) noexcept = 0;
 
-			friend typename E::Registrar_t;
+			friend typename Event_t::Registrar_t;
 		};
 
 		template<typename EventT>
@@ -171,21 +171,20 @@ namespace resplunk
 		struct Registrar final
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
-			using E = EventT;
-			using Processor = Processor<EventT>;
-			using Reactor = Reactor<EventT>;
-			Registrar() = delete;
+			using Event_t = EventT;
+			using Processor_t = Processor<EventT>;
+			using Reactor_t = Reactor<EventT>;
 
-			static void listen(Processor const &p, ListenerPriority priority = ListenerPriority{}) noexcept
+			static void listen(Processor_t const &p, ListenerPriority priority = ListenerPriority{}) noexcept
 			{
 				processors().emplace(priority, std::cref(p));
 			}
-			static void listen(Reactor &r, ListenerPriority priority = ListenerPriority{}) noexcept
+			static void listen(Reactor_t &r, ListenerPriority priority = ListenerPriority{}) noexcept
 			{
 				reactors().emplace(priority, std::ref(r));
 			}
 
-			static void ignore(Processor const &p) noexcept
+			static void ignore(Processor_t const &p) noexcept
 			{
 				auto &procs = processors();
 				for(auto it = procs.begin(); it != procs.end(); )
@@ -197,7 +196,7 @@ namespace resplunk
 					else ++it;
 				}
 			}
-			static void ignore(Reactor &r) noexcept
+			static void ignore(Reactor_t &r) noexcept
 			{
 				auto &reacts = reactors();
 				for(auto it = reacts.begin(); it != reacts.end(); )
@@ -210,7 +209,7 @@ namespace resplunk
 				}
 			}
 
-			static void process(E &e) noexcept
+			static void process(Event_t &e) noexcept
 			{
 				if(!e.shouldProcess())
 				{
@@ -221,7 +220,7 @@ namespace resplunk
 					p.second.get().process(e);
 				}
 			}
-			static void react(E const &e) noexcept
+			static void react(Event_t const &e) noexcept
 			{
 				if(!e.shouldReact())
 				{
@@ -234,18 +233,21 @@ namespace resplunk
 			}
 
 		private:
-			using Processors_t = std::multimap<ListenerPriority, std::reference_wrapper<Processor const>>;
-			using Reactors_t = std::multimap<ListenerPriority, std::reference_wrapper<Reactor>>;
+			friend typename Event_t::Implementor_t;
+			Registrar() = default;
+
+			using Processors_t = std::multimap<ListenerPriority, std::reference_wrapper<typename EventT::Processor_t const>>;
+			using Reactors_t = std::multimap<ListenerPriority, std::reference_wrapper<typename EventT::Reactor_t>>;
+			Processors_t ps;
+			Reactors_t rs;
 			static Processors_t &processors() noexcept
 			{
-				static Processors_t p; //TODO: https://github.com/LB--/resplunk/issues/4
-				return p;
+				return Event_t::registrar.ps;
 			}
 			static auto reactors() noexcept
 			-> Reactors_t &
 			{
-				static Reactors_t r; //TODO: https://github.com/LB--/resplunk/issues/4
-				return r;
+				return Event_t::registrar.rs;
 			}
 		};
 
@@ -288,15 +290,15 @@ namespace resplunk
 			template<typename T>
 			struct Unwrapper<T> final
 			{
-				static_assert(std::is_base_of<Event, typename T::E>::value, "Only Event can be root");
+				static_assert(std::is_base_of<Event, typename T::Event_t>::value, "Only Event can be root");
 				Unwrapper() = delete;
 				static void process(T &t) noexcept
 				{
-					T::Registrar_t::process(dynamic_cast<typename T::E &>(t));
+					T::Registrar_t::process(dynamic_cast<typename T::Event_t &>(t));
 				}
 				static void react(T const &t) noexcept
 				{
-					T::Registrar_t::react(dynamic_cast<typename T::E const &>(t));
+					T::Registrar_t::react(dynamic_cast<typename T::Event_t const &>(t));
 				}
 				static auto parents(T &t) noexcept
 				-> std::tuple<>
@@ -323,7 +325,7 @@ namespace resplunk
 		, virtual ParentT...
 		{
 			using Unwrapper_t = impl::Unwrapper<Implementor, ParentT...>;
-			using E = EventT;
+			using Event_t = EventT;
 			using Parents_t = std::tuple<ParentT &...>;
 			using ConstParents_t = std::tuple<ParentT const &...>;
 			using Implementor_t = Implementor;
@@ -384,8 +386,11 @@ namespace resplunk
 			}
 
 		private:
+			friend Event_t;
 			Implementor() = default;
-			friend EventT;
+
+			friend Registrar_t;
+			static Registrar_t registrar;
 		};
 		template<typename EventT, typename... ParentT>
 		Implementor<EventT, ParentT...>::~Implementor<EventT, ParentT...>() = default;
