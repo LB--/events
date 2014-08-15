@@ -216,10 +216,9 @@ namespace resplunk
 				{
 					return;
 				}
-				auto &procs = processors();
-				for(auto it = procs.begin(); it != procs.end(); ++it)
+				for(p : processors())
 				{
-					it->second.get().process(e);
+					p.second.get().process(e);
 				}
 			}
 			static void react(E const &e) noexcept
@@ -228,10 +227,9 @@ namespace resplunk
 				{
 					return;
 				}
-				auto &reacts = reactors();
-				for(auto it = reacts.begin(); it != reacts.end(); ++it)
+				for(r : reactors())
 				{
-					it->second.get().react(e);
+					r.second.get().react(e);
 				}
 			}
 
