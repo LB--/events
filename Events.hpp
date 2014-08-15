@@ -236,8 +236,8 @@ namespace resplunk
 			friend typename Event_t::Implementor_t;
 			Registrar() = default;
 
-			using Processors_t = std::multimap<ListenerPriority, std::reference_wrapper<typename EventT::Processor_t const>>;
-			using Reactors_t = std::multimap<ListenerPriority, std::reference_wrapper<typename EventT::Reactor_t>>;
+			using Processors_t = std::multimap<ListenerPriority, std::reference_wrapper<Processor_t const>>;
+			using Reactors_t = std::multimap<ListenerPriority, std::reference_wrapper<Reactor_t>>;
 			Processors_t ps;
 			Reactors_t rs;
 			static Processors_t &processors() noexcept
