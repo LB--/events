@@ -8,10 +8,9 @@ namespace resplunk
 {
 	namespace event
 	{
-		template<template<typename T, typename...> typename Wrapper = std::unique_ptr, typename... Args>
 		struct Cloneable
-		:            Implementor<Cloneable<Wrapper, Args...>, Event>
-		, util::CloneImplementor<Cloneable<Wrapper, Args...>, Wrapper, Args...>
+		:            Implementor<Cloneable, Event>
+		, util::CloneImplementor<Cloneable>
 		{
 		};
 	}
