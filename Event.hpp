@@ -18,11 +18,11 @@ namespace resplunk
 				react();
 			}
 
-			virtual bool shouldProcess() const noexcept
+			virtual bool should_process(ProcessorBase const &) const noexcept
 			{
 				return true;
 			}
-			virtual bool shouldReact() const noexcept
+			virtual bool should_react(ReactorBase const &) const noexcept
 			{
 				return true;
 			}

@@ -7,6 +7,7 @@
 #include <limits>
 #include <type_traits>
 #include <functional>
+#include <memory>
 #include <map>
 
 namespace resplunk
@@ -53,8 +54,14 @@ namespace resplunk
 			Priority_t const priority;
 		};
 
+		struct ProcessorBase
+		{
+			virtual ~ProcessorBase() = 0;
+		};
+		inline ProcessorBase::~ProcessorBase() = default;
 		template<typename EventT>
 		struct Processor
+		: virtual ProcessorBase
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using Event_t = EventT;
@@ -110,8 +117,14 @@ namespace resplunk
 			}
 		};
 
+		struct ReactorBase
+		{
+			virtual ~ReactorBase() = 0;
+		};
+		inline ReactorBase::~ReactorBase() = default;
 		template<typename EventT>
 		struct Reactor
+		: virtual ReactorBase
 		{
 			static_assert(std::is_base_of<Event, EventT>::value, "EventT must derive from Event");
 			using Event_t = EventT;
@@ -177,10 +190,12 @@ namespace resplunk
 
 			static void listen(Processor_t const &p, ListenerPriority priority = ListenerPriority{}) noexcept
 			{
+				ignore(p);
 				processors().emplace(priority, std::cref(p));
 			}
 			static void listen(Reactor_t &r, ListenerPriority priority = ListenerPriority{}) noexcept
 			{
+				ignore(r);
 				reactors().emplace(priority, std::ref(r));
 			}
 
@@ -211,24 +226,22 @@ namespace resplunk
 
 			static void process(Event_t &e) noexcept
 			{
-				if(!e.shouldProcess())
-				{
-					return;
-				}
 				for(p : processors())
 				{
-					p.second.get().process(e);
+					if(e.should_process(p.second.get()))
+					{
+						p.second.get().process(e);
+					}
 				}
 			}
 			static void react(Event_t const &e) noexcept
 			{
-				if(!e.shouldReact())
-				{
-					return;
-				}
 				for(r : reactors())
 				{
-					r.second.get().react(e);
+					if(e.should_react(r.second.get()))
+					{
+						r.second.get().react(e);
+					}
 				}
 			}
 

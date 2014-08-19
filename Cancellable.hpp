@@ -21,7 +21,7 @@ namespace resplunk
 				return cancel;
 			}
 
-			virtual bool shouldReact() const noexcept override
+			virtual bool should_react(ReactorBase const &) const noexcept override
 			{
 				return !cancel;
 			}
