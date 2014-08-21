@@ -253,14 +253,15 @@ namespace resplunk
 			using Reactors_t = std::multimap<ListenerPriority, std::reference_wrapper<Reactor_t>>;
 			Processors_t ps;
 			Reactors_t rs;
-			static Processors_t &processors() noexcept
+			static auto processors() noexcept
+			-> Processors_t &
 			{
-				return Event_t::registrar.ps;
+				return Event_t::registrar().ps;
 			}
 			static auto reactors() noexcept
 			-> Reactors_t &
 			{
-				return Event_t::registrar.rs;
+				return Event_t::registrar().rs;
 			}
 		};
 
@@ -403,7 +404,7 @@ namespace resplunk
 			Implementor() = default;
 
 			friend Registrar_t;
-			static Registrar_t registrar;
+			static Registrar_t &registrar() noexcept;
 		};
 		template<typename EventT, typename... ParentT>
 		Implementor<EventT, ParentT...>::~Implementor<EventT, ParentT...>() = default;
@@ -425,6 +426,11 @@ namespace resplunk
 
 #define RESPLUNK_EVENT(n) \
 	template<> \
-	n::Registrar_t n::Implementor_t::registrar {}
+	auto ::n::Implementor_t::registrar() noexcept \
+	-> Registrar_t & \
+	{ \
+		static Registrar_t r;\
+		return r;\
+	}
 
 #endif
