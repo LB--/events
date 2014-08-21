@@ -95,7 +95,7 @@ namespace resplunk
 		};
 
 		template<typename EventT>
-		struct LambdaProcessor
+		struct LambdaProcessor final
 		: Processor<EventT>
 		{
 			using Lambda_t = std::function<void (EventT &e) /*const*/>;
@@ -104,9 +104,23 @@ namespace resplunk
 			, lambda{l}
 			{
 			}
-			LambdaProcessor(LambdaProcessor &&from)
+			LambdaProcessor(LambdaProcessor const &from) noexcept
+			: lambda{from.lambda}
+			{
+			}
+			LambdaProcessor &operator=(LambdaProcessor const &from) noexcept
+			{
+				lambda = from.lambda;
+				return *this;
+			}
+			LambdaProcessor(LambdaProcessor &&from) noexcept
 			: lambda{std::move(from.lambda)}
 			{
+			}
+			LambdaProcessor &operator=(LambdaProcessor &&from) noexcept
+			{
+				lambda = std::move(from.lambda);
+				return *this;
 			}
 
 		private:
@@ -162,14 +176,28 @@ namespace resplunk
 		: Reactor<EventT>
 		{
 			using Lambda_t = std::function<void (EventT const &e)>;
-			LambdaReactor(Lambda_t l, ListenerPriority priority = ListenerPriority{})
-			: Reactor<EventT>(priority) noexcept
+			LambdaReactor(Lambda_t l, ListenerPriority priority = ListenerPriority{}) noexcept
+			: Reactor<EventT>(priority)
 			, lambda{l}
 			{
 			}
-			LambdaReactor(LambdaReactor &&from)
+			LambdaReactor(LambdaReactor const &from) noexcept
+			: lambda{from.lambda}
+			{
+			}
+			LambdaReactor &operator=(LambdaReactor const &from) noexcept
+			{
+				lambda = from.lambda;
+				return *this;
+			}
+			LambdaReactor(LambdaReactor &&from) noexcept
 			: lambda{std::move(from.lambda)}
 			{
+			}
+			LambdaReactor &operator=(LambdaReactor &&from) noexcept
+			{
+				lambda = std::move(from.lambda);
+				return *this;
 			}
 
 		private:
