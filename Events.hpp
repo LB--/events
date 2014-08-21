@@ -424,13 +424,15 @@ namespace resplunk
 	}
 }
 
-#define RESPLUNK_EVENT(n) \
+//Necessary evil is necessary
+#define RESPLUNK_EVENT(E) \
 	template<> \
-	auto ::n::Implementor_t::registrar() noexcept \
+	auto ::E::Implementor_t::registrar() noexcept \
 	-> Registrar_t & \
 	{ \
-		static Registrar_t r;\
-		return r;\
-	}
+		static Registrar_t r; \
+		return r; \
+	} \
+//https://github.com/LB--/resplunk/wiki/Event-Handling#the-ugly-part
 
 #endif
