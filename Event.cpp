@@ -1,10 +1,3 @@
 #include "resplunk/event/Event.hpp"
 
-namespace resplunk
-{
-	namespace event
-	{
-		template<>
-		Event::Registrar_t Event::Implementor_t::registrar {};
-	}
-}
+RESPLUNK_EVENT(resplunk::event::Event);

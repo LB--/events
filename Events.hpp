@@ -423,4 +423,8 @@ namespace resplunk
 	}
 }
 
+#define RESPLUNK_EVENT(n) \
+	template<> \
+	n::Registrar_t n::Implementor_t::registrar {}
+
 #endif
