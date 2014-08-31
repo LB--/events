@@ -2,6 +2,7 @@
 #define resplunk_event_Event_HeaderPlusPlus
 
 #include "resplunk/event/Events.hpp"
+#include "resplunk/util/Metadata.hpp"
 
 namespace resplunk
 {
@@ -9,6 +10,7 @@ namespace resplunk
 	{
 		struct Event
 		: Implementor<Event>
+		, virtual Metadatable
 		{
 			virtual ~Event() = 0;
 
