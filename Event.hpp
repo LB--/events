@@ -10,7 +10,7 @@ namespace resplunk
 	{
 		struct Event
 		: Implementor<Event>
-		, virtual Metadatable
+		, virtual util::Metadatable
 		{
 			virtual ~Event() = 0;
 

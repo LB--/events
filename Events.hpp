@@ -360,14 +360,25 @@ namespace resplunk
 				virtual void process() noexcept = 0;
 				virtual void react() const noexcept = 0;
 			};
+			template<typename... ParentT>
+			struct Inheriter
+			: virtual ParentT...
+			{
+				virtual ~Inheriter() noexcept = 0;
+			};
+			template<typename... ParentT>
+			Inheriter::~Inheriter() noexcept = default;
 		}
 		template<typename EventT, typename... ParentT>
-		struct Implementor
+		struct Implementor;
+		template<typename EventT, template<typename...> typename InheriterT, typename... ParentT>
+		struct Implementor<EventT, InheriterT<ParentT...>>
 		: virtual impl::PR
-		, virtual ParentT...
+		, virtual InheriterT<ParentT...>
 		{
 			using Unwrapper_t = impl::Unwrapper<Implementor, ParentT...>;
 			using Event_t = EventT;
+			using Inheriter_t = InheriterT<ParentT...>;
 			using Parents_t = std::tuple<ParentT &...>;
 			using ConstParents_t = std::tuple<ParentT const &...>;
 			using Implementor_t = Implementor;
@@ -376,7 +387,7 @@ namespace resplunk
 			using Registrar_t = Registrar<EventT>;
 			static constexpr bool MI = (sizeof...(ParentT) > 1);
 			static constexpr bool ROOT = (sizeof...(ParentT) == 0);
-			virtual ~Implementor() = 0;
+			virtual ~Implementor() noexcept = 0;
 
 			static void listen(Processor_t const &p, ListenerPriority priority = ListenerPriority{}) noexcept
 			{
@@ -429,13 +440,27 @@ namespace resplunk
 
 		private:
 			friend Event_t;
-			Implementor() = default;
+			template<typename EventT, typename... ParentT>
+			friend Implementor<EventT, ParentT...>;
+			Implementor() noexcept = default;
 
 			friend Registrar_t;
 			static Registrar_t &registrar() noexcept;
 		};
+		template<typename EventT, typename<typename...> typename InheriterT, typename... ParentT>
+		Implementor<EventT, InheriterT<ParentT...>>::~Implementor<EventT, InheriterT<ParentT...>>() noexcept = default;
 		template<typename EventT, typename... ParentT>
-		Implementor<EventT, ParentT...>::~Implementor<EventT, ParentT...>() = default;
+		struct Implementor
+		: Implementor<DerivedT, impl::Inheriter<ParentT...>>
+		{
+			virtual ~Implementor() noexcept = 0;
+
+		private:
+			friend Event_t;
+			Implementor() noexcept = default;
+		};
+		template<typename EventT, typename... ParentT>
+		Implementor<EventT, ParentT...>::~Implementor<EventT, ParentT...>() noexcept = default;
 
 		template<typename EventT, typename... ParentT>
 		auto parents(Implementor<EventT, ParentT...> &e) noexcept
@@ -455,7 +480,7 @@ namespace resplunk
 //Necessary evil is necessary
 #define RESPLUNK_EVENT(E) \
 	template<> \
-	auto ::E::Implementor_t::registrar() noexcept \
+	auto E::Implementor_t::registrar() noexcept \
 	-> Registrar_t & \
 	{ \
 		static Registrar_t r; \
