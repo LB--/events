@@ -354,27 +354,21 @@ namespace resplunk
 				}
 				using all_parents_t = std::tuple<>;
 			};
-			struct PR
-			{
-				virtual ~PR() noexcept = default;
-				virtual void process() noexcept = 0;
-				virtual void react() const noexcept = 0;
-			};
 			template<typename... ParentT>
 			struct Inheriter
 			: virtual ParentT...
 			{
-				virtual ~Inheriter() noexcept = 0;
+				virtual ~Inheriter() noexcept = default;
+
+				virtual void process() noexcept = 0;
+				virtual void react() const noexcept = 0;
 			};
-			template<typename... ParentT>
-			Inheriter::~Inheriter() noexcept = default;
 		}
 		template<typename EventT, typename... ParentT>
 		struct Implementor;
 		template<typename EventT, template<typename...> typename InheriterT, typename... ParentT>
 		struct Implementor<EventT, InheriterT<ParentT...>>
-		: virtual impl::PR
-		, virtual InheriterT<ParentT...>
+		: virtual InheriterT<ParentT...>
 		{
 			using Unwrapper_t = impl::Unwrapper<Implementor, ParentT...>;
 			using Event_t = EventT;
@@ -440,23 +434,23 @@ namespace resplunk
 
 		private:
 			friend Event_t;
-			template<typename EventT, typename... ParentT>
 			friend Implementor<EventT, ParentT...>;
 			Implementor() noexcept = default;
 
 			friend Registrar_t;
 			static Registrar_t &registrar() noexcept;
 		};
-		template<typename EventT, typename<typename...> typename InheriterT, typename... ParentT>
+		template<typename EventT, template<typename...> typename InheriterT, typename... ParentT>
 		Implementor<EventT, InheriterT<ParentT...>>::~Implementor<EventT, InheriterT<ParentT...>>() noexcept = default;
 		template<typename EventT, typename... ParentT>
 		struct Implementor
-		: Implementor<DerivedT, impl::Inheriter<ParentT...>>
+		: Implementor<EventT, impl::Inheriter<ParentT...>>
 		{
+			using typename Implementor<EventT, impl::Inheriter<ParentT...>>::Implementor_t;
 			virtual ~Implementor() noexcept = 0;
 
 		private:
-			friend Event_t;
+			friend typename Implementor_t::Event_t;
 			Implementor() noexcept = default;
 		};
 		template<typename EventT, typename... ParentT>
