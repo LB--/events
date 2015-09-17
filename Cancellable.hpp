@@ -1,11 +1,11 @@
-#ifndef resplunk_event_Cancellable_HeaderPlusPlus
-#define resplunk_event_Cancellable_HeaderPlusPlus
+#ifndef LB_events_Cancellable_HeaderPlusPlus
+#define LB_events_Cancellable_HeaderPlusPlus
 
-#include "resplunk/event/Event.hpp"
+#include "Event.hpp"
 
-namespace resplunk
+namespace LB
 {
-	namespace event
+	namespace events
 	{
 		struct Cancellable
 		: Implementor<Cancellable, Event>

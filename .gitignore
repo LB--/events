@@ -1,6 +1,7 @@
 build/
 *.bat
 *.sublime*
+bii/
 
 #################
 ## Eclipse

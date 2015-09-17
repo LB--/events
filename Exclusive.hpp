@@ -1,11 +1,11 @@
-#ifndef resplunk_event_Exclusive_HeaderPlusPlus
-#define resplunk_event_Exclusive_HeaderPlusPlus
+#ifndef LB_events_Exclusive_HeaderPlusPlus
+#define LB_events_Exclusive_HeaderPlusPlus
 
-#include "resplunk/event/Event.hpp"
+#include "Event.hpp"
 
-namespace resplunk
+namespace LB
 {
-	namespace event
+	namespace events
 	{
 		struct Exclusive
 		: Implementor<Exclusive, Event>

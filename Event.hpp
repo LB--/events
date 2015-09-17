@@ -1,16 +1,14 @@
-#ifndef resplunk_event_Event_HeaderPlusPlus
-#define resplunk_event_Event_HeaderPlusPlus
+#ifndef LB_events_Event_HeaderPlusPlus
+#define LB_events_Event_HeaderPlusPlus
 
-#include "resplunk/event/Events.hpp"
-#include "resplunk/util/Metadata.hpp"
+#include "Events.hpp"
 
-namespace resplunk
+namespace LB
 {
-	namespace event
+	namespace events
 	{
 		struct Event
 		: Implementor<Event>
-		, virtual util::Metadatable
 		{
 			virtual ~Event() = 0;
 

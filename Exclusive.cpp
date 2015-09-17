@@ -1,3 +1,3 @@
-#include "resplunk/event/Exclusive.hpp"
+#include "Exclusive.hpp"
 
-RESPLUNK_EVENT(resplunk::event::Exclusive);
+LB_EVENTS_EVENT(LB::events::Exclusive);

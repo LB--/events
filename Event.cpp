@@ -1,3 +1,3 @@
-#include "resplunk/event/Event.hpp"
+#include "Event.hpp"
 
-RESPLUNK_EVENT(resplunk::event::Event);
+LB_EVENTS_EVENT(LB::events::Event);

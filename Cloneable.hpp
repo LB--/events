@@ -1,16 +1,16 @@
-#ifndef resplunk_event_Cloneable_HeaderPlusPlus
-#define resplunk_event_Cloneable_HeaderPlusPlus
+#ifndef LB_events_Cloneable_HeaderPlusPlus
+#define LB_events_Cloneable_HeaderPlusPlus
 
-#include "resplunk/event/Event.hpp"
-#include "resplunk/util/Cloneable.hpp"
+#include "Event.hpp"
+#include "LB/cloning/cloning.hpp"
 
 namespace resplunk
 {
 	namespace event
 	{
 		struct Cloneable
-		:            Implementor<Cloneable, Event>
-		, util::CloneImplementor<Cloneable>
+		:                   Implementor<Cloneable, Event>
+		, LB::cloning::CloneImplementor<Cloneable>
 		{
 		};
 	}

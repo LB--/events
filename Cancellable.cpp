@@ -1,3 +1,3 @@
-#include "resplunk/event/Cancellable.hpp"
+#include "Cancellable.hpp"
 
-RESPLUNK_EVENT(resplunk::event::Cancellable);
+LB_EVENTS_EVENT(LB::events::Cancellable);

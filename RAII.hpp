@@ -1,11 +1,11 @@
-#ifndef resplunk_event_RAII_HeaderPlusPlus
-#define resplunk_event_RAII_HeaderPlusPlus
+#ifndef LB_events_RAII_HeaderPlusPlus
+#define LB_events_RAII_HeaderPlusPlus
 
-#include "resplunk/event/Event.hpp"
+#include "Event.hpp"
 
-namespace resplunk
+namespace LB
 {
-	namespace event
+	namespace events
 	{
 		template<typename T>
 		struct Construct

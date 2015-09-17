@@ -1,3 +1,3 @@
-#include "resplunk/event/Cloneable.hpp"
+#include "Cloneable.hpp"
 
-RESPLUNK_EVENT(resplunk::event::Cloneable);
+LB_EVENTS_EVENT(LB::events::Cloneable);

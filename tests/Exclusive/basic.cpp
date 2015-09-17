@@ -1,22 +1,22 @@
 #undef NDEBUG
 
-#include "resplunk/event/Exclusive.hpp"
+#include "Exclusive.hpp"
 
 #include <cassert>
 
 template<typename... Args>
-using EventImplementor = resplunk::event::Implementor<Args...>;
+using EventImplementor = LB::event::Implementor<Args...>;
 template<typename... Args>
-using EventProcessor = resplunk::event::Processor<Args...>;
+using EventProcessor = LB::event::Processor<Args...>;
 template<typename... Args>
-using EventReactor = resplunk::event::Reactor<Args...>;
-using ExclusiveEvent = resplunk::event::Exclusive;
+using EventReactor = LB::event::Reactor<Args...>;
+using ExclusiveEvent = LB::event::Exclusive;
 
 struct TestEvent
 : EventImplementor<TestEvent, ExclusiveEvent>
 {
 };
-RESPLUNK_EVENT(TestEvent);
+LB_EVENTS_EVENT(TestEvent);
 
 int np = 0;
 int nr = 0;

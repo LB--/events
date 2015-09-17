@@ -1,16 +1,16 @@
 #undef NDEBUG
 
-#include "resplunk/event/Cancellable.hpp"
+#include "Cancellable.hpp"
 
 #include <cassert>
 
 template<typename... Args>
-using EventImplementor = resplunk::event::Implementor<Args...>;
+using EventImplementor = LB::event::Implementor<Args...>;
 template<typename... Args>
-using EventProcessor = resplunk::event::Processor<Args...>;
+using EventProcessor = LB::event::Processor<Args...>;
 template<typename... Args>
-using EventReactor = resplunk::event::Reactor<Args...>;
-using CancellableEvent = resplunk::event::Cancellable;
+using EventReactor = LB::event::Reactor<Args...>;
+using CancellableEvent = LB::event::Cancellable;
 
 struct TestEvent
 : EventImplementor<TestEvent, CancellableEvent>
@@ -21,7 +21,7 @@ struct TestEvent
 	{
 	}
 };
-RESPLUNK_EVENT(TestEvent);
+LB_EVENTS_EVENT(TestEvent);
 
 int n = 0;
 

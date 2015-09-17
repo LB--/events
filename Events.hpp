@@ -1,7 +1,7 @@
-#ifndef resplunk_event_Events_HeaderPlusPlus
-#define resplunk_event_Events_HeaderPlusPlus
+#ifndef LB_events_Events_HeaderPlusPlus
+#define LB_events_Events_HeaderPlusPlus
 
-#include "resplunk/util/TMP.hpp"
+#include "LB/tuples/tuples.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -10,9 +10,9 @@
 #include <memory>
 #include <map>
 
-namespace resplunk
+namespace LB
 {
-	namespace event
+	namespace events
 	{
 		struct Event;
 
@@ -321,7 +321,7 @@ namespace resplunk
 				{
 					return tuple_cat(std::tuple<First const &>{t}, Next::parents(t));
 				}
-				using all_parents_t = typename util::tuple_type_cat
+				using all_parents_t = typename tuples::tuple_type_cat
 				<
 					typename First::Unwrapper_t::all_parents_t,
 					typename Rest::Unwrapper_t::all_parents_t...,
@@ -403,13 +403,13 @@ namespace resplunk
 
 			virtual void process() noexcept override
 			{
-				util::tuple_template_forward
+				tuples::tuple_template_forward
 				<
 					impl::Unwrapper,
-					typename util::tuple_type_cat
+					typename tuples::tuple_type_cat
 					<
 						std::tuple<Implementor_t>,
-						typename util::tuple_prune
+						typename tuples::tuple_prune
 						<
 							typename Unwrapper_t::all_parents_t
 						>::type
@@ -418,13 +418,13 @@ namespace resplunk
 			}
 			virtual void react() const noexcept override
 			{
-				util::tuple_template_forward
+				tuples::tuple_template_forward
 				<
 					impl::Unwrapper,
-					typename util::tuple_type_cat
+					typename tuples::tuple_type_cat
 					<
 						std::tuple<Implementor_t>,
-						typename util::tuple_prune
+						typename tuples::tuple_prune
 						<
 							typename Unwrapper_t::all_parents_t
 						>::type
@@ -472,7 +472,7 @@ namespace resplunk
 }
 
 //Necessary evil is necessary
-#define RESPLUNK_EVENT(E) \
+#define LB_EVENTS_EVENT(E) \
 	template<> \
 	auto E::Implementor_t::registrar() noexcept \
 	-> Registrar_t & \
@@ -480,6 +480,6 @@ namespace resplunk
 		static Registrar_t r; \
 		return r; \
 	} \
-//https://github.com/LB--/resplunk/wiki/Event-Handling#the-ugly-part
+//https://github.com/LB--/events/#the-ugly-part
 
 #endif
