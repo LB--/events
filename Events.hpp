@@ -315,17 +315,17 @@ namespace LB
 				}
 				static auto parents(T &t) noexcept
 				{
-					return tuple_cat(std::tuple<First &>{t}, Next::parents(t));
+					return tuple_cat(tuples::tuple<First &>{t}, Next::parents(t));
 				}
 				static auto parents(T const &t) noexcept
 				{
-					return tuple_cat(std::tuple<First const &>{t}, Next::parents(t));
+					return tuple_cat(tuples::tuple<First const &>{t}, Next::parents(t));
 				}
 				using all_parents_t = typename tuples::tuple_type_cat
 				<
 					typename First::Unwrapper_t::all_parents_t,
 					typename Rest::Unwrapper_t::all_parents_t...,
-					std::tuple<First>,
+					tuples::tuple<First>,
 					typename Next::all_parents_t
 				>::type;
 			};
@@ -343,16 +343,16 @@ namespace LB
 					T::Registrar_t::react(dynamic_cast<typename T::Event_t const &>(t));
 				}
 				static auto parents(T &t) noexcept
-				-> std::tuple<>
+				-> tuples::tuple<>
 				{
 					return {};
 				}
 				static auto parents(T const &t) noexcept
-				-> std::tuple<>
+				-> tuples::tuple<>
 				{
 					return {};
 				}
-				using all_parents_t = std::tuple<>;
+				using all_parents_t = tuples::tuple<>;
 			};
 			template<typename... ParentT>
 			struct Inheriter
@@ -373,8 +373,8 @@ namespace LB
 			using Unwrapper_t = impl::Unwrapper<Implementor, ParentT...>;
 			using Event_t = EventT;
 			using Inheriter_t = InheriterT<ParentT...>;
-			using Parents_t = std::tuple<ParentT &...>;
-			using ConstParents_t = std::tuple<ParentT const &...>;
+			using Parents_t = tuples::tuple<ParentT &...>;
+			using ConstParents_t = tuples::tuple<ParentT const &...>;
 			using Implementor_t = Implementor;
 			using Processor_t = Processor<EventT>;
 			using Reactor_t = Reactor<EventT>;
@@ -408,7 +408,7 @@ namespace LB
 					impl::Unwrapper,
 					typename tuples::tuple_type_cat
 					<
-						std::tuple<Implementor_t>,
+						tuples::tuple<Implementor_t>,
 						typename tuples::tuple_prune
 						<
 							typename Unwrapper_t::all_parents_t
@@ -423,7 +423,7 @@ namespace LB
 					impl::Unwrapper,
 					typename tuples::tuple_type_cat
 					<
-						std::tuple<Implementor_t>,
+						tuples::tuple<Implementor_t>,
 						typename tuples::tuple_prune
 						<
 							typename Unwrapper_t::all_parents_t
@@ -473,12 +473,18 @@ namespace LB
 
 //Necessary evil is necessary
 #define LB_EVENTS_EVENT(E) \
-	template<> \
-	auto E::Implementor_t::registrar() noexcept \
-	-> Registrar_t & \
+	namespace LB \
 	{ \
-		static Registrar_t r; \
-		return r; \
+		namespace events \
+		{ \
+			template<> \
+			auto E::Implementor_t::registrar() noexcept \
+			-> Registrar_t & \
+			{ \
+				static Registrar_t r; \
+				return r; \
+			} \
+		} \
 	} \
 //https://github.com/LB--/events/#the-ugly-part
 

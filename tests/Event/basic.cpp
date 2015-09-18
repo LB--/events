@@ -5,12 +5,12 @@
 #include <cassert>
 
 template<typename... Args>
-using EventImplementor = LB::event::Implementor<Args...>;
+using EventImplementor = LB::events::Implementor<Args...>;
 template<typename... Args>
-using EventProcessor = LB::event::Processor<Args...>;
+using EventProcessor = LB::events::Processor<Args...>;
 template<typename... Args>
-using EventReactor = LB::event::Reactor<Args...>;
-using Event = LB::event::Event;
+using EventReactor = LB::events::Reactor<Args...>;
+using Event = LB::events::Event;
 
 struct TestEvent
 : EventImplementor<TestEvent, Event>

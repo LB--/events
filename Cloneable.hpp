@@ -4,9 +4,9 @@
 #include "Event.hpp"
 #include "LB/cloning/cloning.hpp"
 
-namespace resplunk
+namespace LB
 {
-	namespace event
+	namespace events
 	{
 		struct Cloneable
 		:                   Implementor<Cloneable, Event>

@@ -7,12 +7,12 @@
 #include <utility>
 
 template<typename... Args>
-using EI = LB::event::Implementor<Args...>;
+using EI = LB::events::Implementor<Args...>;
 template<typename... Args>
-using LEP = LB::event::LambdaProcessor<Args...>;
+using LEP = LB::events::LambdaProcessor<Args...>;
 template<typename... Args>
-using LER = LB::event::LambdaReactor<Args...>;
-using E = LB::event::Event;
+using LER = LB::events::LambdaReactor<Args...>;
+using E = LB::events::Event;
 
 struct E0 : EI<E0, E> {}; LB_EVENTS_EVENT(E0);
 
