@@ -1,7 +1,6 @@
 events [![Build Status](https://webapi.biicode.com/v1/badges/LB/LB/events/master)](https://www.biicode.com/LB/events)
 ======
 Whereas most event libraries allow changing both the event itself and the state of the program while enumerating handlers, this library specifically forbids that by separating event handling into two phases.
-Both phases are optional.
 The first phase is the _processing_ phase, where the event iself can be changed, but the state of the program _must not change_.
 The second phase is the _reacting_ phase, where the event itself cannot be changed, and the state of the program _should_ change.
 Events are classes and support inheritance, including multiple inheritance.
@@ -9,17 +8,20 @@ Events are classes and support inheritance, including multiple inheritance.
 _This library requires that your compiler support C++1z (the C++ standard after C++14)_
 
 ## Processing vs Reacting
-The difference between processing and reacting is intentional, and so profound that there is no common "listener" class between processors and reactors.
+The difference between processing and reacting is by design - there is no common "listener" class between processors and reactors.
 Processing an event means _only the event should be modified_.
 Trying to change the state of the application during the processing phase is _wrong_ and should never be done.
 Reacting is where the event can no longer be modified, but you are _expected_ to change the state of the application.
-The reasoning behind this is that an event might never move on from the processing phase to the reacting phase, and if you already did something because of the event during the processing phase, there is no way to know that you need to undo it.
+This is because an event might never move on from the processing phase to the reacting phase, and if you already did something because of the event during the processing phase, there is no way to know that you need to undo it.
+Alternatively, the caller may wish that the event be reacted to without processing it first.
 
-This library tries to enforce the distinction between processing and reacting through const-correctness.
+This library _tries_ to enforce the distinction between processing and reacting through const-correctness, but it's not possible to prevent misuse entirely.
 For processing an event, the event is non-const but the processor is const.
 For reacting to an event, the event is const but the reactor is non-const.
 Additionally, some events' member functions have inversed const-correctness to mirror processing vs reacting (you may be familiar with logical-const vs bitwise-const).
-If you try to use `const_cast`, that's _wrong_, **even if you're going from non-const to const**. Beware implicit casts.
+If you try to use `const_cast`, that's _wrong_, **even if you're going from non-const to const**.
+Beware implicit casts - they can bypass the two-phase dichotomy unintentionally.
+It is up to you to not violate the contract.
 
 ## Order of Execution
 When events are called, the call propagates through the entire class hierarchy.
@@ -86,6 +88,7 @@ private:
 Take note of the differing locations of the keyword `const`.
 For processing events, the member function is `const`.
 For reacting to events, the events themselves are `const`.
+Don't vioate the two-phase dichotomy - if you want to do evil things, just use any other event library ever.
 
 ## Calling Events
 You can invoke `call()` to have any event be both `process()`ed and `react()`ed to. Events are called for the least derived classes first before moving on to more specific handling for more derived classes and finally reaching the most derived class.
@@ -96,7 +99,7 @@ SomeEvent{/**/}.call();
 ```
 
 ## The predefined events
-For your convenience some types of events are defined for you, or they are necessary for the functionality of the library.
+For your convenience, some types of events are defined for you.
 Most predefined events are abstract and require you to derive them with your own events, which you will see how do do in the next section.
 
 ### `Event`
@@ -105,6 +108,8 @@ When you `#include "LB/events/Event.hpp"` you get access to `LB::events::Event`,
 ### `Cancellable`
 When you `#include "LB/events/Cancellable.hpp"` you get access to `LB::events::Cancellable`, which is the base class for all events that can be cancelled.
 If an event is cancelled, invoking `react()` will have no effect.
+During the processing phase, call `cancelled(true)` to cancel reacting to the event, or `cancelled(false)` to override a previous processor's decision.
+You can also call `cancelled()` with no parameters to see if the event will be reacted to or not.
 
 ### `Exclusive`
 When you `#include "LB/events/Exclusive.hpp"` you get access to `LB::events::Exclusive`, which is the base class for all events which should have exactly either 0 or 1 reactors.
@@ -117,7 +122,7 @@ That's for you to decide.
 
 **Note** that you should consult the documentation for [`Cloneable` types](https://github.com/LB--/cloning) to learn how to properly derive this event.
 
-### `Construct<>`
+### `Construct<>` and `Destruct<>`
 When you `#include "LB/events/RAII.hpp"` you get access to `LB::events::Construct`, which is a template base class for classes that need to fire an event when they are constructed.
 `Construct` events intentionally ignore the inheritance tree for their particular class - as they are called from constructors, the more-derived class constructors have not been called yet.
 Once the `Construct` event has ended, the more-derived class' constructor will call its own `Construct` event, and so on.
