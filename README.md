@@ -179,7 +179,7 @@ Members which affect the state of the application should have _inversed_ const-c
 
 ### Exception Guarantee
 By default, exceptions can be thrown when processing or reacting to an event - only the minimal basic exception guarantee is made (the application will be in a consistent state, though not necessarily a predictable state).
-You can enforce the `noexcept` exception guarantee on processing and reacting by added a static member to your event class:
+You can enforce the `noexcept` exception guarantee on processing and reacting by adding a static member to your event class:
 ```cpp
 static constexpr bool NOEXCEPT = true;
 ```
