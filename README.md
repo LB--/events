@@ -69,14 +69,14 @@ struct MyListener
 	int blah = 0;
 
 private:
-	virtual void process(WidgetEvent &e) const noexcept override
+	virtual void process(WidgetEvent &e) const override
 	{
 		//blah is const
 		//e.instance() returns const
 		//you may change the event
 		//you should NOT change the application state
 	}
-	virtual void react(WidgetEvent const &e) noexcept override
+	virtual void react(WidgetEvent const &e) override
 	{
 		//blah is non-const
 		//e.instance() returns non-const
@@ -213,8 +213,8 @@ struct MyCaseSpecificResolver
 	virtual void do_stuff() noexcept override = 0;
 
 	//These would also be considered conflicting
-	virtual void process() noexcept override = 0;
-	virtual void react() const noexcept override = 0;
+	virtual void process() override = 0;
+	virtual void react() const override = 0;
 };
 ```
 After that, use `Implementor` like this:
