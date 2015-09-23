@@ -89,7 +89,7 @@ namespace LB
 			}
 
 		private:
-			virtual void process(Event_t &e) const noexcept = 0;
+			virtual void process(Event_t &e) const noexcept(EventT::NOEXCEPT) = 0;
 
 			friend typename Event_t::Registrar_t;
 		};
@@ -125,7 +125,7 @@ namespace LB
 
 		private:
 			Lambda_t lambda;
-			virtual void process(EventT &e) const noexcept override
+			virtual void process(EventT &e) const noexcept(EventT::NOEXCEPT) override
 			{
 				return lambda(e);
 			}
@@ -166,7 +166,7 @@ namespace LB
 			}
 
 		private:
-			virtual void react(Event_t const &e) noexcept = 0;
+			virtual void react(Event_t const &e) noexcept(EventT::NOEXCEPT) = 0;
 
 			friend typename Event_t::Registrar_t;
 		};
@@ -202,7 +202,7 @@ namespace LB
 
 		private:
 			Lambda_t lambda;
-			virtual void react(EventT const &e) noexcept override
+			virtual void react(EventT const &e) noexcept(EventT::NOEXCEPT) override
 			{
 				return lambda(e);
 			}
@@ -252,7 +252,7 @@ namespace LB
 				}
 			}
 
-			static void process(Event_t &e) noexcept
+			static void process(Event_t &e) noexcept(EventT::NOEXCEPT)
 			{
 				for(p : processors())
 				{
@@ -262,7 +262,7 @@ namespace LB
 					}
 				}
 			}
-			static void react(Event_t const &e) noexcept
+			static void react(Event_t const &e) noexcept(EventT::NOEXCEPT)
 			{
 				for(r : reactors())
 				{
@@ -303,12 +303,12 @@ namespace LB
 				static_assert(std::is_base_of<Event, First>::value, "ParentT must derive from Event");
 				using Next = Unwrapper<T, Rest...>;
 				Unwrapper() = delete;
-				static void process(T &t) noexcept
+				static void process(T &t) noexcept(T::NOEXCEPT)
 				{
 					First::Registrar_t::process(t);
 					Next::process(t);
 				}
-				static void react(T const &t) noexcept
+				static void react(T const &t) noexcept(T::NOEXCEPT)
 				{
 					First::Registrar_t::react(t);
 					Next::react(t);
@@ -334,11 +334,11 @@ namespace LB
 			{
 				static_assert(std::is_base_of<Event, typename T::Event_t>::value, "Only Event can be root");
 				Unwrapper() = delete;
-				static void process(T &t) noexcept
+				static void process(T &t) noexcept(T::NOEXCEPT)
 				{
 					T::Registrar_t::process(dynamic_cast<typename T::Event_t &>(t));
 				}
-				static void react(T const &t) noexcept
+				static void react(T const &t) noexcept(T::NOEXCEPT)
 				{
 					T::Registrar_t::react(dynamic_cast<typename T::Event_t const &>(t));
 				}
@@ -355,13 +355,33 @@ namespace LB
 				using all_parents_t = tuples::tuple<>;
 			};
 			template<typename... ParentT>
+			struct is_noexcept final
+			: std::false_type
+			{
+			};
+			template<typename First, typename... Rest>
+			struct is_noexcept<First, Rest...> final
+			: std::integral_constant<bool, First::NOEXCEPT || is_noexcept<Rest...>::value> //std::bool_constant
+			{
+			};
+			template<typename... ParentT>
 			struct Inheriter
 			: virtual ParentT...
 			{
+				static constexpr bool NOEXCEPT = is_noexcept<ParentT...>::value;
 				virtual ~Inheriter() noexcept = default;
 
-				virtual void process() noexcept = 0;
-				virtual void react() const noexcept = 0;
+				virtual void process() noexcept(NOEXCEPT) override = 0;
+				virtual void react() const noexcept(NOEXCEPT) override = 0;
+			};
+			template<>
+			struct Inheriter<>
+			{
+				static constexpr bool NOEXCEPT = false;
+				virtual ~Inheriter() noexcept = default;
+
+				virtual void process() noexcept(NOEXCEPT) = 0;
+				virtual void react() const noexcept(NOEXCEPT) = 0;
 			};
 		}
 		template<typename EventT, typename... ParentT>
@@ -381,6 +401,7 @@ namespace LB
 			using Registrar_t = Registrar<EventT>;
 			static constexpr bool MI = (sizeof...(ParentT) > 1);
 			static constexpr bool ROOT = (sizeof...(ParentT) == 0);
+			static constexpr bool NOEXCEPT = Inheriter_t::NOEXCEPT;
 			virtual ~Implementor() noexcept = 0;
 
 			static void listen(Processor_t const &p, ListenerPriority priority = ListenerPriority{}) noexcept
@@ -401,7 +422,7 @@ namespace LB
 				return Registrar_t::ignore(r);
 			}
 
-			virtual void process() noexcept override
+			virtual void process() noexcept(NOEXCEPT) override
 			{
 				tuples::tuple_template_forward
 				<
@@ -416,7 +437,7 @@ namespace LB
 					>::type
 				>::type::process(*this);
 			}
-			virtual void react() const noexcept override
+			virtual void react() const noexcept(NOEXCEPT) override
 			{
 				tuples::tuple_template_forward
 				<

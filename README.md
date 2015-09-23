@@ -177,6 +177,14 @@ Your new event type is ready to be used.
 Members which affect the state of the event itself should have normal const-correctness.
 Members which affect the state of the application should have _inversed_ const-correctness.
 
+### Exception Guarantee
+By default, exceptions can be thrown when processing or reacting to an event - only the minimal basic exception guarantee is made (the application will be in a consistent state, though not necessarily a predictable state).
+You can enforce the `noexcept` exception guarantee on processing and reacting by added a static member to your event class:
+```cpp
+static constexpr bool NOEXCEPT = true;
+```
+Now your event and all its derived events will have the `noexcept` guarantee.
+
 ### The Ugly Part
 The `LB::events::Implementor` class needs to store static data (`LB::events::Registrar`), but since it is a template, you have to manually define that static data for every instantiation of `Implementor`.
 You saw how to do it in the `MyEvent` example above - it's the only reason you need a source file at all.

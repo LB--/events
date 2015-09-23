@@ -12,7 +12,7 @@ namespace LB
 		{
 			virtual ~Event() = 0;
 
-			virtual void call() noexcept final
+			virtual void call() noexcept(NOEXCEPT) final
 			{
 				process();
 				react();
