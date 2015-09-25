@@ -1,4 +1,4 @@
-events [![Build Status](https://webapi.biicode.com/v1/badges/LB/LB/events/master)](https://www.biicode.com/LB/events)
+events [![biicode](https://webapi.biicode.com/v1/badges/LB/LB/events/master)](https://www.biicode.com/LB/events) [![travis](https://travis-ci.org/LB--/events.svg?branch=events)](https://travis-ci.org/LB--/events)
 ======
 Whereas most event libraries allow changing both the event itself and the state of the program while enumerating handlers, this library specifically forbids that by separating event handling into two phases.
 The first phase is the _processing_ phase, where the event iself can be changed, but the state of the program _must not change_.

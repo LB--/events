@@ -1,0 +1,37 @@
+language: c++
+compiler:
+#  - clang
+  - gcc
+
+sudo: false
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-5
+
+before_install:
+  - if [ "$CC"  == "gcc" ]; then export CC=gcc-5; fi
+  - if [ "$CXX" == "g++" ]; then export CXX=g++-5; fi
+  - pushd .
+  - mkdir -p ".travis/biicode" && cd ".travis"
+  - wget https://s3.amazonaws.com/biibinaries/release/3.3/bii-ubuntu-64_3_3.deb
+  - dpkg -x bii-ubuntu-64_3_3.deb ./biicode/
+  - cd biicode/opt/biicode
+  - BIIPATH=$(pwd)
+  - export PATH="$BIIPATH:$PATH"
+  - bii --version
+  - popd
+
+install:
+  - bii setup:cpp
+
+before_script:
+  - bii init . -L
+  - bii find
+  - bii configure -t
+
+script:
+  - bii build
+  - bii test
