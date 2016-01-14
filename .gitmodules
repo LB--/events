@@ -1,0 +1,6 @@
+[submodule "cloning"]
+	path = cloning
+	url = https://github.com/LB--/cloning.git
+[submodule "tuples"]
+	path = tuples
+	url = https://github.com/LB--/tuples.git

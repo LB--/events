@@ -1,8 +1,33 @@
-#cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.4)
 
-project(events)
+project(LB::events-superproject
+	LANGUAGES NONE
+)
 
-ADD_BII_TARGETS()
-
-#set_property(TARGET ${BII_BLOCK_TARGET} PROPERTY CXX_STANDARD 17)
-target_compile_options(${BII_BLOCK_TARGET} INTERFACE "-std=c++1z")
+include(ExternalProject)
+set(DEPS_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/deps-install")
+ExternalProject_Add(cloning
+	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cloning"
+	LIST_SEPARATOR "#"
+	CMAKE_ARGS
+		"-DCMAKE_INSTALL_PREFIX=${DEPS_INSTALL_DIR}"
+	TEST_EXCLUDE_FROM_MAIN 1
+)
+ExternalProject_Add(tuples
+	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tuples"
+	LIST_SEPARATOR "#"
+	CMAKE_ARGS
+		"-DCMAKE_INSTALL_PREFIX=${DEPS_INSTALL_DIR}"
+	TEST_EXCLUDE_FROM_MAIN 1
+)
+ExternalProject_Add(events
+	DEPENDS
+		cloning
+		tuples
+	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/events"
+	LIST_SEPARATOR "#"
+	CMAKE_ARGS
+		"-DCMAKE_INSTALL_PREFIX=${DEPS_INSTALL_DIR}"
+	TEST_AFTER_INSTALL 1
+	TEST_COMMAND ctest --output-on-failure
+)
