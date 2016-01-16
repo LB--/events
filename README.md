@@ -7,6 +7,12 @@ Events are classes and support inheritance, including multiple inheritance.
 
 _This library requires that your compiler support C++1z (the C++ standard after C++14)_
 
+### CMake Usage
+From the `events/cmake` directory, copy the `FindLB` directory to a place in your `CMAKE_MODULE_PATH`.
+Then, add `find_package(LB/events REQUIRED)` to your CMake script.
+You may need to set the CMake variable `LB/events_ROOT` if you installed to a nonstandard location.
+Finally, link to the `LB::events` imported target with `target_link_libraries()`.
+
 ## Processing vs Reacting
 The difference between processing and reacting is by design - there is no common "listener" class between processors and reactors.
 Processing an event means _only the event should be modified_.

@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.4)
 
-project(LB::events
+project(LB/events
 	VERSION 0.0.0
 	LANGUAGES CXX
 )
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/${PROJECT_VERSION})
 
-include(${CMAKE_INSTALL_PREFIX}/cmake/LB/cloning/cloning.cmake)
-include(${CMAKE_INSTALL_PREFIX}/cmake/LB/tuples/tuples.cmake)
+find_package(LB/cloning REQUIRED)
+find_package(LB/tuples REQUIRED)
 
 add_library(events
 	"Cancellable.cpp"
@@ -38,7 +39,7 @@ install(
 )
 install(
 	EXPORT events
-	DESTINATION cmake/LB/events
+	DESTINATION cmake/LB
 	NAMESPACE LB::
 )
 install(
@@ -49,7 +50,7 @@ install(
 		"Events.hpp"
 		"Exclusive.hpp"
 		"RAII.hpp"
-	DESTINATION include/LB/events
+	DESTINATION include/${PROJECT_NAME}
 )
 
 enable_testing()
