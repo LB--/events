@@ -34,6 +34,7 @@ macro(_fmp_report_error _msg)
 	elseif(NOT ${_package}_FIND_QUIETLY)
 		message(STATUS "Find ${_package_name}: ${_msg}")
 	endif()
+	set(${_package}_NOT_FOUND_MESSAGE "${_msg}")
 endmacro()
 
 # Info reporting macro
@@ -63,16 +64,20 @@ foreach(_component ${${_package}_FIND_COMPONENTS})
 endforeach()
 _fmp_report_debug("########")
 
+# For CMake GUI
+option(${_package}_PREFER_HIGHEST
+	"Prefer the highest available version even if a lower version has more requested optional components"
+)
+
 # Find where all versions are installed
-if(NOT ${_package}_ROOT)
-	find_path(${_package}_ROOT
-		NAMES
-			${_package}
-	)
-endif()
+find_path(${_package}_ROOT
+	NAMES
+		${_package}
+	DOC "This should be the directory that contains ${_package}"
+)
 
 # Error out if we could not find the package directory
-if(${${_package}_ROOT} STREQUAL "${_package}_ROOT-NOTFOUND")
+if("${${_package}_ROOT}" STREQUAL "${_package}_ROOT-NOTFOUND")
 	_fmp_report_error("Could not find where versions are stored - please set ${_package}_ROOT")
 	return()
 endif()
@@ -172,35 +177,39 @@ if(_num_candidates EQUAL 0)
 	return()
 endif()
 
-# Prefer versions with the most requested optional components
-set(_preferred_versions "")
-set(_preferred_versions_compnum 0)
-foreach(_version ${_candidate_versions})
-	set(_compnum 0)
-	# Count present requested optional components
-	foreach(_component ${${_package}_FIND_COMPONENTS})
-		if(NOT ${_package}_FIND_REQUIRED_${_component})
-			if(EXISTS "${${_package}_VERSIONS_DIRECTORY}/${_version}/cmake/${_package}/${_component}.cmake")
-				math(EXPR _compnum "${_compnum} + 1")
+if(${_package}_PREFER_HIGHEST)
+	set(_preferred_versions "${_candidate_versions}")
+else()
+	# Prefer versions with the most requested optional components
+	set(_preferred_versions "")
+	set(_preferred_versions_compnum 0)
+	foreach(_version ${_candidate_versions})
+		set(_compnum 0)
+		# Count present requested optional components
+		foreach(_component ${${_package}_FIND_COMPONENTS})
+			if(NOT ${_package}_FIND_REQUIRED_${_component})
+				if(EXISTS "${${_package}_VERSIONS_DIRECTORY}/${_version}/cmake/${_package}/${_component}.cmake")
+					math(EXPR _compnum "${_compnum} + 1")
+				endif()
 			endif()
+		endforeach()
+		# Update preferred versions
+		if(_compnum GREATER _preferred_versions_compnum)
+			set(_preferred_versions ${_version})
+			set(_preferred_versions_compnum ${_compnum})
+		elseif(_compnum EQUAL _preferred_versions_compnum)
+			list(APPEND _preferred_versions ${_version})
 		endif()
 	endforeach()
-	# Update preferred versions
-	if(_compnum GREATER _preferred_versions_compnum)
-		set(_preferred_versions ${_version})
-		set(_preferred_versions_compnum ${_compnum})
-	elseif(_compnum EQUAL _preferred_versions_compnum)
-		list(APPEND _preferred_versions ${_version})
-	endif()
-endforeach()
-_fmp_report_debug("_preferred_versions=${_preferred_versions}")
+	_fmp_report_debug("_preferred_versions=${_preferred_versions}")
 
-# Error out if we made a mistake in our logic above
-# (worst case should be that _preferred_versions is the same as _candidate_versions)
-list(LENGTH _preferred_versions _num_preferred)
-if(_num_preferred EQUAL 0)
-	message(FATAL_ERROR "Something has gone wrong the code in Find${_package}.cmake")
-	return()
+	# Error out if we made a mistake in our logic above
+	# (worst case should be that _preferred_versions is the same as _candidate_versions)
+	list(LENGTH _preferred_versions _num_preferred)
+	if(_num_preferred EQUAL 0)
+		message(FATAL_ERROR "Something has gone wrong the code in Find${_package}.cmake")
+		return()
+	endif()
 endif()
 
 # Finally, select the highest version
@@ -211,18 +220,41 @@ foreach(_version ${_preferred_versions})
 	endif()
 endforeach()
 _fmp_report_debug("_preferred_version=${_preferred_version}")
+set(_ver_path "${${_package}_VERSIONS_DIRECTORY}/${_preferred_version}/cmake")
+
+# Make sure all requirements are met
+include("${_ver_path}/${_package}-requirements.cmake" OPTIONAL)
+foreach(_component ${${_package}_FIND_COMPONENTS})
+	include("${_ver_path}/${_package}/${_component}-requirements.cmake" OPTIONAL)
+endforeach()
 
 # Load the version and report findings
-include("${${_package}_VERSIONS_DIRECTORY}/${_preferred_version}/cmake/${_package}.cmake")
+include("${_ver_path}/${_package}.cmake")
 set(_components "")
 foreach(_component ${${_package}_FIND_COMPONENTS})
-	set(_comp_path "${${_package}_VERSIONS_DIRECTORY}/${_preferred_version}/cmake/${_package}/${_component}.cmake")
+	set(_comp_path "${_ver_path}/${_package}/${_component}.cmake")
 	if(EXISTS "${_comp_path}")
 		include("${_comp_path}")
 		list(APPEND _components ${_component})
+		set(${_package}_${_component}_FOUND 1)
 	endif()
 endforeach()
 set(${_package}_FOUND 1)
+set(${_package}_VERSION "${_preferred_version}")
+set(${_package}_VERSION_STRING "${_preferred_version}")
+string(REPLACE "." ";" _preferred_version_list "${_preferred_version}")
+list(LENGTH _preferred_version_list _preferred_version_depth)
+list(GET _preferred_version_list 0 ${_package}_VERSION_MAJOR)
+if(_preferred_version_depth GREATER 1)
+	list(GET _preferred_version_list 1 ${_package}_VERSION_MINOR)
+	if(_preferred_version_depth GREATER 2)
+		list(GET _preferred_version_list 2 ${_package}_VERSION_PATCH)
+		if(_preferred_version_depth GREATER 3)
+			list(GET _preferred_version_list 3 ${_package}_VERSION_TWEAK)
+		endif()
+	endif()
+endif()
+set(${_package}_ROOT_DIR "${${_package}_VERSIONS_DIRECTORY}/${_preferred_version}")
 string(REPLACE ";" ", " _components "${_components}")
 if(_components STREQUAL "")
 	_fmp_report_info("Found version ${_preferred_version} with no components")
