@@ -7,6 +7,7 @@ project(LB::events-superproject
 include(ExternalProject)
 ExternalProject_Add(cloning
 	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cloning"
+	BUILD_ALWAYS 1
 	LIST_SEPARATOR "#"
 	CMAKE_ARGS
 		"-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
@@ -15,6 +16,7 @@ ExternalProject_Add(cloning
 )
 ExternalProject_Add(tuples
 	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tuples"
+	BUILD_ALWAYS 1
 	LIST_SEPARATOR "#"
 	CMAKE_ARGS
 		"-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
@@ -26,6 +28,7 @@ ExternalProject_Add(events
 		cloning
 		tuples
 	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/events"
+	BUILD_ALWAYS 1
 	LIST_SEPARATOR "#"
 	CMAKE_ARGS
 		"-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"

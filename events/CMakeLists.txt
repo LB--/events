@@ -52,6 +52,13 @@ install(
 		"RAII.hpp"
 	DESTINATION include/${PROJECT_NAME}
 )
+set(_export "${CMAKE_INSTALL_PREFIX}/cmake/${PROJECT_NAME}.cmake")
+configure_file(
+	"${CMAKE_CURRENT_SOURCE_DIR}/fixup.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/fixup.cmake"
+	@ONLY
+)
+install(SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/fixup.cmake")
 
 enable_testing()
 add_subdirectory("test/")
